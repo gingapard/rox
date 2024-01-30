@@ -1,3 +1,3 @@
-# mudmouse
+# Mudmouse
 
-terminal ill browser
+terminal ill browser for the **sysadmins**
