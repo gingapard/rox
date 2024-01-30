@@ -1,0 +1,14 @@
+#!/bin/bash
+
+COMPILER="gcc"
+OUTPUT="bin/mudmouse"
+
+FILE="src/main.c"
+LIB="-lncurses"
+
+$COMPILER $FILE $LIB -o $OUTPUT
+
+if [ "$1" = "run" ]; then
+    ./bin/mudmouse
+fi
+
