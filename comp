@@ -1,12 +1,15 @@
 COMPILER="gcc"
 OUTPUT="bin/mudmouse"
 
-FILE="src/main.c"
+FILE="src/main.c src/lexer.c"
 LIB="-lncurses"
 
-$COMPILER $FILE $LIB -o $OUTPUT
+echo "compiling..."
+time $COMPILER $FILE $LIB -o $OUTPUT
+echo "done"
 
 if [ "$1" = "run" ]; then
+	echo "running..."
     ./bin/mudmouse
 fi
 

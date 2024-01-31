@@ -2,7 +2,9 @@
 
 int main(void) {
 	initscr();
-	getch();
+
+	int ch;
+	while ((ch = getch()) != 27) {}
 	endwin();
 	return 0;
 }
