@@ -12,19 +12,21 @@ typedef struct {
 } Lexer;
 
 enum TokenType {
-	TAG_START,
-	TAG_END,
-	TEXT,
+	LETTER,
+	NUMBER,
+	SYMBOL,
+	SPACE,
 	OTHER,
-	EOF_TYPE,
+	EndOfFile,
 };
 
 typedef struct {
-	enum TokenType type;
+	enum TokenType token_type;
 	char content[16];
 } Token;
 
-Token next_token(Lexer *lexer);
+Token next_token(Lexer lexer);
+uint8_t peek(Lexer lexer);
 
 
 #endif
