@@ -42,7 +42,6 @@ Token next_token(Lexer* lexer) {
 			char str[32];
 			peek_until(str, lexer, ' ');
 			strcpy(token.content, str);
-			token.type = TAG_END;
 			break;
 	}
 
