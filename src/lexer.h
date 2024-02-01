@@ -15,6 +15,8 @@ enum TokenType {
 	TAG_START,
 	TAG_END,
 	TEXT,
+	ATTRIBUTE,
+	EQUALS,
 	OTHER,
 	EOF_TYPE,
 };
