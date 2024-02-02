@@ -4,9 +4,10 @@
 
 #include "lexer.h"
 
-static char* capture_token(Lexer* lexer, uint8_t identifier);
+static char* capture_token(Lexer* lexer, char* identifiers);
 uint8_t peek(Lexer* lexer);
-static void peek_until(char* str, Lexer* lexer, uint8_t identifier);
+static int isin(uint8_t ch, char* identifiers);
+static void peek_until(char* str, Lexer* lexer, char* identifier);
 static void forward(Lexer* lexer);
 
 Token next_token(Lexer* lexer) {
@@ -17,45 +18,60 @@ Token next_token(Lexer* lexer) {
         return token;
     }
 
+    char* token_content;
     switch (lexer->ch) {
-
         case '\"':
-			forward(lexer);
+
             token.type = TEXT;
-			strcpy(token.content, capture_token(lexer, '\"'));
+            token_content = capture_token(lexer, "\"");
+            strcpy(token.content, token_content);
+            free(token_content);
             break;
 
         // START/END TAG
         case '<':
+
             if (peek(lexer) == '/') {
+                forward(lexer);
                 token.type = TAG_END;
             } else {
                 token.type = TAG_START;
             }
 
-			strcpy(token.content, capture_token(lexer, '\"'));
+            char* identifiers = " >";
+            token_content = capture_token(lexer, identifiers); 
+            strcpy(token.content, token_content);
+            free(token_content);
+
             break;
 
-		default:
+        case '=':
 
-			token.type = OTHER;
-			break;
+            token.type = EQUALS;
+            strcpy(token.content, "=");
+            break;
+
+        default:
+
+            token.type = OTHER;
+            break;
     }
 
     forward(lexer);
     return token;
 }
 
-static char* capture_token(Lexer* lexer, uint8_t identifier) {
-	size_t len = 0;
-	while (lexer->input[lexer->position - len] != identifier && len < strlen(lexer->input)) {
-		++len;
-	}
-	
-	char* str = (char*)malloc(len + 1);
-	peek_until(str, lexer, identifier);
+static char* capture_token(Lexer* lexer, char* identifiers) {
+    // finding token size
+    size_t len = 0;
+    while (isin(lexer->input[lexer->position - len], identifiers) == 0 && len < strlen(lexer->input)) {
+        ++len;
+    }
 
-	return str;
+    char* str = (char*)malloc(len + 1);
+    peek_until(str, lexer, identifiers);
+
+    return str;
 }
 
 
@@ -67,21 +83,27 @@ uint8_t peek(Lexer* lexer) {
     }
 }
 
-static void peek_until(char* str, Lexer* lexer, uint8_t identifier) {
+static void peek_until(char* str, Lexer* lexer, char* identifiers) {
     forward(lexer);
     size_t i = 0;
-    while (lexer->ch != identifier && lexer->position < strlen(lexer->input)) {
+    while (isin(lexer->ch, identifiers) == 0 && i < strlen(lexer->input)) {
         str[i] = lexer->ch;
         forward(lexer);
         ++i;
     }
 
-    forward(lexer);
     str[i] = '\0';
 }
 
+static int isin(uint8_t ch, char* identifiers) {
+    for (int i = 0; i < strlen(identifiers); ++i) {
+        if (ch == identifiers[i]) return 1;
+    }
+
+    return 0;
+}
+
 static void forward(Lexer* lexer) {
-    ++lexer->position;
-    lexer->ch = lexer->input[lexer->position];
+    lexer->ch = lexer->input[++lexer->position];
 }
 
