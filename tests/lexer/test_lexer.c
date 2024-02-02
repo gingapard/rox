@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv) {
 
-	char* input = "test";
+	char* input = "<div> </div>";
 	
 	// init lexer
 	Lexer lexer;
@@ -15,13 +15,12 @@ int main(int argc, char** argv) {
 	lexer.input[strlen(input)] = '\0';
 
 	lexer.position = 0;
-	
 	lexer.ch = lexer.input[lexer.position];
 	// init lexer
 
 	Token token;
 	while ((token = next_token(&lexer)).type != EOF_TYPE) {
-		printf("%d\n", token.type);
+		printf("%s\n", token.content);
 	}
 
 	free(lexer.input);

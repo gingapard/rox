@@ -3,14 +3,6 @@
 
 #include <stdint.h>
 
-enum TokenType;
-
-typedef struct {
-	char* input;
-	size_t position;
-	uint8_t ch;
-} Lexer;
-
 enum TokenType {
 	TAG_START,
 	TAG_END,
@@ -23,8 +15,14 @@ enum TokenType {
 
 typedef struct {
 	enum TokenType type;
-	char content[16];
+	char content[256];
 } Token;
+
+typedef struct {
+	char* input;
+	size_t position;
+	uint8_t ch;
+} Lexer;
 
 Token next_token(Lexer *lexer);
 
