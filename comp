@@ -1,5 +1,5 @@
 COMPILER="gcc"
-OUTPUT="bin/mudmouse"
+OUTPUT="bin/a.out"
 
 FILE="src/main.c src/lexer.c"
 LIB="-lncurses"
@@ -10,6 +10,6 @@ echo "done"
 
 if [ "$1" = "run" ]; then
 	echo "running..."
-    ./bin/mudmouse
+    ./bin/a.out
 fi
 
