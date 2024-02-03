@@ -20,7 +20,8 @@ typedef struct {
 
 typedef struct {
 	char* input;
-	size_t position;
+	uint32_t position;
+	uint8_t in_tag;
 	uint8_t ch;
 } Lexer;
 
