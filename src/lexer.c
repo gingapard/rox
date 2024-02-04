@@ -4,6 +4,7 @@
 #include <ctype.h>
 
 #include "lexer.h"
+#include "utils.h"
 
 static void skip_whitespace(Lexer* lexer);
 static char* capture_token(Lexer* lexer); 
@@ -14,8 +15,9 @@ static void backward(Lexer* lexer);
 Token next_token(Lexer* lexer) {
     Token token;
 
-    if (lexer->position >= strlen(lexer->input)) {
+    if (lexer->position >= strlen(lexer->input) && lexer->ch == '\0') {
         token.type = EOF_TYPE;
+        token.content = NULL;
         return token;
     }
     
@@ -31,7 +33,6 @@ Token next_token(Lexer* lexer) {
         case '\"':
             token.type = QUOTE;
             token.content = capture_token(lexer);
-            return token;
             break;
         case '=':
             token.type = EQUALS;
@@ -46,7 +47,7 @@ Token next_token(Lexer* lexer) {
     }
     
     char token_content[2] = {lexer->ch, '\0'};
-    token.content = strdup(token_content);
+    token.content = str_x_dup(token_content);
     forward(lexer);
     return token;
 }
@@ -91,11 +92,13 @@ static uint8_t peek(Lexer* lexer) {
 }
 
 static void forward(Lexer* lexer) {
-    lexer->ch = lexer->input[++lexer->position];
+    if (lexer->ch != '\0' && lexer->position < strlen(lexer->input)) {
+        lexer->ch = lexer->input[++lexer->position];
+    }
 }
 
 static void backward(Lexer* lexer) {
-    if (lexer->position > 0) {
+    if (lexer->position > 0 && lexer->ch != '\0') {
         lexer->ch = lexer->input[--lexer->position];
     }
 }

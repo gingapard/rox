@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 enum TokenType {
-	R_ANGLE,
 	L_ANGLE,
+	R_ANGLE,
 	KEYWORD,
 	QUOTE,
 	EQUALS,
