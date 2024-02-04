@@ -1,0 +1,1 @@
+gcc -g -lcurl test_net.c ../../src/net.c -o test_net
