@@ -1,13 +1,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "lexer.h"
 
-static char* capture_token(Lexer* lexer, char* identifiers);
+static void skip_whitespace(Lexer* lexer);
+static char* capture_token(Lexer* lexer); 
 static uint8_t peek(Lexer* lexer);
-static int isin(uint8_t ch, char* identifiers);
-static void peek_until(char* str, Lexer* lexer, char* identifier);
 static void forward(Lexer* lexer);
 static void backward(Lexer* lexer);
 
@@ -18,116 +18,76 @@ Token next_token(Lexer* lexer) {
         token.type = EOF_TYPE;
         return token;
     }
-
-    char* token_content;
-    char* identifiers = NULL;
+    
+    skip_whitespace(lexer);
 
     switch (lexer->ch) {
-        case '\"':
-
-            token.type = TEXT;
-            token_content = capture_token(lexer, "\"");
-            strcpy(token.content, token_content);
-            free(token_content);
-            break;
-
-        // START/END TAG
         case '<':
-            lexer->in_tag = 1;
-
-            if (peek(lexer) == '/') {
-                forward(lexer);
-                token.type = TAG_END;
-            } else {
-                token.type = TAG_START;
-            }
-
-            identifiers = strdup(" >\"");
-            token_content = capture_token(lexer, identifiers); 
-            strcpy(token.content, token_content);
-            free(token_content);
-
-            if (lexer->ch == '>') {
-                lexer->in_tag = 0;
-            }
-            else if (lexer->ch == '\"') {
-                forward(lexer);
-                token.type = ATTRIBUTE;
-                token_content = capture_token(lexer, "\"");
-                strcat(token.content, token_content);
-                free(token_content);
-            }
-
+            token.type = L_ANGLE;
             break;
-
+        case '>':
+            token.type = R_ANGLE;
+            break; 
+        case '\"':
+            token.type = QUOTE;
+            token.content = capture_token(lexer);
+            return token;
+            break;
         case '=':
-
             token.type = EQUALS;
-            strcpy(token.content, "=");
             break;
-
+        case '/':
+            token.type = F_SLASH;
+            break;
         default:
-            
-            if (lexer->in_tag == 1) {
-                token.type = ATTRIBUTE;
-                identifiers = strdup("=\"<");
-            }
-            else {
-                token.type = OTHER;
-                identifiers = strdup("<");
-            }
-
-            token_content = capture_token(lexer, identifiers);
-            strcpy(token.content, token_content);
-            free(token_content);
-            backward(lexer);
+            token.type = KEYWORD;
+            token.content = capture_token(lexer);
+            return token;
     }
-
-    free(identifiers);
+    
+    char token_content[2] = {lexer->ch, '\0'};
+    token.content = strdup(token_content);
     forward(lexer);
     return token;
 }
 
-static char* capture_token(Lexer* lexer, char* identifiers) {
-    // finding token size
+static void skip_whitespace(Lexer* lexer) {
+    while (lexer->ch == ' ') forward(lexer);
+}
+
+static uint8_t is_valid(uint8_t ch) {
+    if (isalpha(ch) || isdigit(ch) || ch == '_' || ch == '-') return 1;
+    return 0;
+}
+
+static char* capture_token(Lexer* lexer) {
     size_t len = 0;
-    while (isin(lexer->input[lexer->position - len], identifiers) == 0 && len < strlen(lexer->input)) {
+
+    if (lexer->ch != '\"') {
+        while (is_valid(lexer->input[lexer->position + len])) ++len; 
+    }
+    else {
+        ++len;
+        while (lexer->input[lexer->position + len] != '\"') ++len;
         ++len;
     }
-
+    
     char* str = (char*)malloc(len + 1);
-    peek_until(str, lexer, identifiers);
+    for (int i = 0; i < len; ++i) {
+        str[i] = lexer->input[lexer->position + i];
+    }
+
+    str[len] = '\0';
+
+    for (int i = 0; i < len; ++i) {
+        forward(lexer);
+    }
 
     return str;
 }
 
-
 static uint8_t peek(Lexer* lexer) {
-    if (lexer->position + 1 < strlen(lexer->input)) {
-        return lexer->input[lexer->position + 1];
-    } else {
-        return '\0';  
-    }
-}
-
-static void peek_until(char* str, Lexer* lexer, char* identifiers) {
-    forward(lexer);
-    size_t i = 0;
-    while (isin(lexer->ch, identifiers) == 0 && i < strlen(lexer->input)) {
-        str[i] = lexer->ch;
-        forward(lexer);
-        ++i;
-    }
-
-    str[i] = '\0';
-}
-
-static int isin(uint8_t ch, char* identifiers) {
-    for (size_t i = 0; i < strlen(identifiers); ++i) {
-        if (ch == identifiers[i]) return 1;
-    }
-
-    return 0;
+    return lexer->input[lexer->position + 1];
 }
 
 static void forward(Lexer* lexer) {
@@ -135,5 +95,7 @@ static void forward(Lexer* lexer) {
 }
 
 static void backward(Lexer* lexer) {
-    lexer->ch = lexer->input[--lexer->position];
+    if (lexer->position > 0) {
+        lexer->ch = lexer->input[--lexer->position];
+    }
 }

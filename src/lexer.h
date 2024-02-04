@@ -4,24 +4,23 @@
 #include <stdint.h>
 
 enum TokenType {
-	TAG_START,
-	TAG_END,
-	TEXT,
-	ATTRIBUTE,
+	R_ANGLE,
+	L_ANGLE,
+	KEYWORD,
+	QUOTE,
 	EQUALS,
-	OTHER,
+	F_SLASH,
 	EOF_TYPE,
 };
 
 typedef struct {
 	enum TokenType type;
-	char content[256];
+	char* content;
 } Token;
 
 typedef struct {
 	char* input;
 	uint32_t position;
-	uint8_t in_tag;
 	uint8_t ch;
 } Lexer;
 
