@@ -53,16 +53,19 @@ Token next_token(Lexer* lexer) {
 }
 
 static void skip_whitespace(Lexer* lexer) {
-    while (lexer->ch == ' ') forward(lexer);
+    while (lexer->ch == ' ' && lexer->position <= strlen(lexer->input)) 
+        forward(lexer);
 }
 
 static uint8_t is_valid(uint8_t ch) {
-    if (isalpha(ch) || isdigit(ch) || ch == '_' || ch == '-') return 1;
+    if (isalpha(ch) || isdigit(ch) || ch == '_' || ch == '-') 
+        return 1;
     return 0;
 }
 
 static char* capture_token(Lexer* lexer) {
     size_t len = 0;
+
 
     if (lexer->ch != '\"') {
         while (is_valid(lexer->input[lexer->position + len])) ++len; 
