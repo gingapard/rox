@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-uint8_t isin(uint8_t ch, char* str) {
+uint8_t is_in(uint8_t ch, char* str) {
     size_t len = strlen(str);
     for (size_t i = 0; i < len; ++i) {
         if (ch == str[i]) return 1;
