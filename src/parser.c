@@ -22,7 +22,7 @@ void parse(Token* tokens) {
      * Using allocation to heap as html documents
      * are not expected to be large 
      */
-    Tag* tags = (Tag*)malloc(sizeof(Tag));
+    Tag* tags = (Tag*)malloc(sizeof(Tag*));
 
 
 
