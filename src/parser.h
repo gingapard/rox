@@ -6,7 +6,7 @@
 #include "lexer.h"
 #include "utils.h"
 
-enum TagType {
+typedef enum {
 	A,
 	ABBR,
 	ADDRESS,
@@ -118,9 +118,9 @@ enum TagType {
 	VAR,
 	VIDEO,
 	WBR,
-};
+} TagType;
 
-enum AttributeType {
+typedef enum {
 	ACCESSKEY,
 	ALIGN,
 	ALT,
@@ -140,7 +140,6 @@ enum AttributeType {
 	HEIGHT,
 	HREF,
 	ID,
-	LABEL,
 	MAX,
 	MAXLENGTH,
 	METHOD,
@@ -153,12 +152,11 @@ enum AttributeType {
 	REQUIRED,
 	ROWSPAN,
 	SRC,
-	STYLE,
 	TARGET,
 	TYPE,
 	VALUE,
 	WIDTH,
-};
+} AttributeType;
 
 typedef struct {
 	Token* input;
@@ -172,7 +170,7 @@ typedef struct {
 } Attribute;
 
 typedef struct {
-	enum TagType type;
+	TagType type;
 	Attribute* attributes;
 	uint8_t open;
 } Tag;
