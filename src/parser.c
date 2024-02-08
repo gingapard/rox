@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdio.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,15 +24,25 @@ void parse(Token* tokens) {
      * are not expected to be large 
      */
     Tag* tags = (Tag*)malloc(sizeof(Tag*));
-
-
+    if (tags == NULL) {
+        fprintf(stderr, "Error during allocation");
+        return;
+    }
 
 }
 
-static void push_tag(Tag* tag, Tag* head) {
-    
+static void push_tag(Tag* tag, Tag* tags, size_t size) {
+    tags = (Tag*)realloc(tags, (size + 1) * sizeof(Tag));
+    if (tags == NULL)
+        return;
+
+    tags[size] = *tag;
 }
 
-static void pop_tag(Tag* tag, Tag* head) {
-
+static void pop_tag(Tag* tag, Tag* tags, size_t size) {
+    if (size > 0) {
+        tags = (Tag*)realloc(tags, (size - 1) * sizeof(Tag));
+        if (tags == NULL) 
+            return;
+    }   
 }
