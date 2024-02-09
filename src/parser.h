@@ -166,13 +166,28 @@ typedef struct {
 
 typedef struct {
 	AttributeType type;
+	char* name;
 	char* content;
 } Attribute;
 
 typedef struct {
 	TagType type;
 	Attribute* attributes;
+	size_t attributes_count;
 	uint8_t open;
 } Tag;
+
+typedef struct {
+	TagType type;
+	Attribute* attributes;
+	size_t attributes_count;
+	char* content;
+} Element;
+
+typedef struct {
+	// to be defined.
+} SyntaxTree;
+
+SyntaxTree* parse(char* path);
 
 #endif

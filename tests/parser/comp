@@ -1,0 +1,1 @@
+gcc test_parser.c ../../src/parser.c ../../src/lexer.c ../../src/utils.c -o test_parser
