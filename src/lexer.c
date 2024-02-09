@@ -2,15 +2,70 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "lexer.h"
 #include "utils.h"
 
+static Token next_token(Lexer* lexer);
 static void skip_whitespace(Lexer* lexer);
 static char* capture_token(Lexer* lexer); 
 static uint8_t fpeek(Lexer* lexer);
 static void forward(Lexer* lexer);
 static void backward(Lexer* lexer);
+
+Token* lex(char* path, size_t* len) {
+    FILE* fp = fopen(path, "r");
+    if (fp == NULL)
+        return NULL;
+
+    long file_size = get_file_size(path);
+    char* buffer = (char*)malloc(file_size + 1);
+    if (buffer == NULL) {
+        fclose(fp);
+        perror("could not allocate memory");
+        return NULL;
+    }
+
+    size_t read_size = fread(buffer, 1, file_size, fp); 
+
+    /* Making sure the read size is the same as 
+     * the size of the file 
+     */
+    if (read_size != file_size) {
+        fclose(fp);
+        free(buffer);
+        perror("could not read file");
+        return NULL;
+    }
+
+    buffer[file_size] = '\0';
+
+    // initiate lexer
+    Lexer lexer;
+    lexer.input = (char*)malloc(strlen(buffer) + 1);
+    strcpy(lexer.input, buffer);
+    lexer.position = 0;
+    lexer.ch = lexer.input[lexer.position];
+
+    free(buffer);
+
+    /* creating pointer to the stored tokens and keeping
+     * track of the size 
+     */
+    Token* tokens = NULL;
+    Token token;
+
+    while ((token = next_token(&lexer)).type != EOF_TYPE) {
+        tokens = (Token*)realloc(tokens, sizeof(Token) * (*len + 1)); 
+        tokens[*len] = token; 
+        ++(*len);
+    }
+
+    fclose(fp);
+    free(lexer.input); 
+    return tokens;
+}
 
 Token next_token(Lexer* lexer) {
     Token token;

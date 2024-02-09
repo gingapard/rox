@@ -9,7 +9,10 @@
 #include "utils.h"
 
 /* temp return type as parser.h file not setup properly */
-void parse(Token* tokens) {
+void parse(char* path) {
+
+    size_t len;
+    Token* tokens = lex(path, &len);
 
     /* init parser, which will get tokens
     * provided by the lexer.
@@ -19,6 +22,7 @@ void parse(Token* tokens) {
     parser.token = parser.input[0];
     parser.position = 0;
     
+
     /*storing the tags(parsed tokens).
      * Using allocation to heap as html documents
      * are not expected to be large 
@@ -29,6 +33,12 @@ void parse(Token* tokens) {
         return;
     }
 
+    free(parser.input);
+    free(tokens);
+}
+
+static void free_tags(Tag* tag) {
+   // function for tags and its contents -r 
 }
 
 static void push_tag(Tag* tag, Tag* tags, size_t size) {

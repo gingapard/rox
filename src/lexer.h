@@ -41,7 +41,6 @@ typedef struct {
 	uint8_t ch;
 } Lexer;
 
-Token next_token(Lexer *lexer);
-
+Token* lex(char* str, size_t* len);
 
 #endif
