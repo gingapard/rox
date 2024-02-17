@@ -30,7 +30,6 @@ const char* element_keywords[115] = {
     "var", "video",
     "wbr"
 };
-
 const char* attribute_keywords[160] = {
     "accept", "accept-charset", "accesskey", "action", "align", "alt", "async",
     "autocomplete", "autofocus", "autoplay",
@@ -55,7 +54,9 @@ const char* attribute_keywords[160] = {
 
 Token next_token(Lexer* lexer);
 static void skip_whitespace(Lexer* lexer);
-static char* capture_token(Lexer* lexer, Token* token); 
+static uint8_t is_valid(uint8_t ch);
+static void capture_token(Lexer* lexer, Token* token); 
+static uint8_t bpeek(Lexer* lexer);
 static uint8_t fpeek(Lexer* lexer);
 static void forward(Lexer* lexer);
 static void backward(Lexer* lexer);
@@ -193,17 +194,20 @@ Token next_token(Lexer* lexer) {
             skip_whitespace(lexer);
             return next_token(lexer);
         default:
-            capture_token(lexer, &token);
+            if (isalnum(lexer->ch)) {
+                capture_token(lexer, &token);
+            }
+            forward(lexer);
             return token;
     }
     
     /* allocating lexer->ch to a string and assigning token.content
-     * unless lexer->ch is ' or "  
+     * unless lexer->ch is alphanumeric  
      */
     
     // note: suspected memory corruption bug here
     if (current_ch != '\"' && current_ch != '\'') {
-        char token_content[2] = {lexer->ch, '\0'};
+        char token_content[2] = {current_ch};
         token.content = str_x_dup(token_content);
     }
 
@@ -216,30 +220,71 @@ static void skip_whitespace(Lexer* lexer) {
         forward(lexer);
 }
 
-/* The thought for this function is to find if a collection of characters
- * are valid. (This is for use outside of "" or '')
- */
 static uint8_t is_valid(uint8_t ch) {
-    if (is_in(ch, "<>=\"\' "))
-        return 0;
-    return 1;
+    if (isalnum(ch)) {
+        return 1;
+    }
+    return 0;
 }
 
-static char* capture_token(Lexer* lexer, Token* token) {
-    // todo: check if it isalnum
-    // alloc needed memory
-    // set token type
-    // check list of html_elements and attributes
+static void capture_token(Lexer* lexer, Token* token) {
+    size_t len = 0;
+
+    while (lexer->position + len < strlen(lexer->input) && is_valid(lexer->input[lexer->position + len])) {
+        ++len;
+    }
+
+    if (lexer->position > 0 && (bpeek(lexer) == '\"' || (bpeek(lexer) == '\'' && fpeek(lexer) == bpeek(lexer)))) {
+        token->type = TEXT;
+    }
+
+    /* allocate the needed memory */
+    token->content = (char*)malloc(len + 1);
+    if (token->content == NULL)
+        return;
+
+    for (size_t i = 0; i < len; ++i) {
+        token->content[i] = lexer->input[lexer->position + i];
+    }
+
+    token->content[len] = '\0';
+    lexer->position += len; 
+    lexer->ch = lexer->input[lexer->position];
+
+    if (token->type != TEXT) {
+        // iter element keywords
+        for (size_t i = 0; i < 115; ++i) {
+            if (strcmp(token->content, element_keywords[i]) == 0) {
+                token->type = ELEMENT_KWORD;
+                return;
+            }
+        }
+
+        for (size_t i = 0; i < 160; ++i) {
+            if (strcmp(token->content, attribute_keywords[i]) == 0) {
+                token->type = ATTRIBUTE_KWORD;
+                return;
+            }
+        }
+    }
+
+    token->type = OTHER;
 }
 
-// frontpeek
 static uint8_t fpeek(Lexer* lexer) {
-    return lexer->input[lexer->position + 1];
+    if (lexer->position + 1 < strlen(lexer->input)) {
+        return lexer->input[lexer->position + 1];
+    }
+
+    return '\0';
 }
 
-// backpeek
 static uint8_t bpeek(Lexer* lexer) {
-    return lexer->input[lexer->position - 1];
+    if (lexer->position > 0) {
+        return lexer->input[lexer->position - 1];
+    } 
+
+    return '\0';
 }
 
 static void forward(Lexer* lexer) {

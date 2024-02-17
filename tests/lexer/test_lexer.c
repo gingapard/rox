@@ -6,7 +6,7 @@
 #include "../../src/utils.h"
 
 void test_next_token() {
-    char* path = "gnu.html";
+    char* path = "gnu";
     FILE* fp = fopen(path, "r");
     if (fp == NULL)
         return;
@@ -47,6 +47,7 @@ void test_next_token() {
     Token token;
     while ((token = next_token(&lexer)).type != EOF_TYPE) {
         printf("%d: %s\n", token.type, token.content);
+        free(token.content);
     }
 
     fclose(fp);
@@ -58,7 +59,7 @@ void test_lex() {
     Token* tokens = lex("gnu.html", &token_count);
 
     for (int i = 0; i < token_count; ++i) {
-        printf("%s\n", tokens[i].type, tokens[i].content);
+        printf("%s\n", tokens[i].content);
     }
     
     free(tokens);

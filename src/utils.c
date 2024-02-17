@@ -23,7 +23,7 @@ char* str_x_dup(char* str) {
         alloced_str[i] = str[i]; 
     }
 
-    alloced_str[len + 1] = '\0';
+    alloced_str[len] = '\0';
     return alloced_str;
 }
 

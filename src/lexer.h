@@ -4,7 +4,10 @@
 #include <stdint.h>
 
 enum TokenType {
-	KEYWORD,
+    ELEMENT_KWORD,
+    ATTRIBUTE_KWORD,
+    TEXT,
+    OTHER,
     ALPHNUM,
 	L_ANGLE,
 	R_ANGLE,
