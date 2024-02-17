@@ -7,12 +7,12 @@
 #include "lexer.h"
 #include "utils.h"
 
-const char* element_keywords[115] = {
+#define ELMNT_KWORD_COUNT 115
+#define ATRBT_KWORD_COUNT 160
+
+const char* element_keywords[ELMNT_KWORD_COUNT] = {
     "a", "abbr", "address", "area", "article", "aside", "audio",
-    "b", "base", "bdi", "bdo", "blockquote", "body", "br", "button",
-    "canvas", "caption", "cite", "code", "col", "colgroup",
-    "data", "datalist", "dd", "del", "details", "dfn", "dialog", "div", "dl", "dt",
-    "em", "embed",
+    "b", "base", "bdi", "bdo", "blockquote", "body", "br", "button", "canvas", "caption", "cite", "code", "col", "colgroup", "data", "datalist", "dd", "del", "details", "dfn", "dialog", "div", "dl", "dt", "em", "embed",
     "fieldset", "figcaption", "figure", "footer", "form",
     "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hr", "html",
     "i", "iframe", "img", "input", "ins",
@@ -30,7 +30,7 @@ const char* element_keywords[115] = {
     "var", "video",
     "wbr"
 };
-const char* attribute_keywords[160] = {
+const char* attribute_keywords[ATRBT_KWORD_COUNT] = {
     "accept", "accept-charset", "accesskey", "action", "align", "alt", "async",
     "autocomplete", "autofocus", "autoplay",
     "bgcolor", "border",
@@ -54,71 +54,17 @@ const char* attribute_keywords[160] = {
 
 Token next_token(Lexer* lexer);
 static void skip_whitespace(Lexer* lexer);
-static uint8_t is_valid(uint8_t ch);
-static void capture_token(Lexer* lexer, Token* token); 
+static char* capture_token(Lexer* lexer); 
 static uint8_t bpeek(Lexer* lexer);
 static uint8_t fpeek(Lexer* lexer);
 static void forward(Lexer* lexer);
 static void backward(Lexer* lexer);
 
-Token* lex(char* path, size_t* len) {
-    FILE* fp = fopen(path, "r");
-    if (fp == NULL)
-        return NULL;
-
-    long file_size = get_file_size(path);
-    char* buffer = (char*)malloc(file_size + 1);
-    if (buffer == NULL) {
-        fclose(fp);
-        perror("could not allocate memory");
-        return NULL;
-    }
-
-    size_t read_size = fread(buffer, 1, file_size, fp); 
-
-    /* Making sure the read size is the same as 
-     * the size of the file 
-     */
-    if (read_size != file_size) {
-        fclose(fp);
-        free(buffer);
-        perror("could not read file");
-        return NULL;
-    }
-
-    buffer[file_size] = '\0';
-
-    // initiate lexer
-    Lexer lexer;
-    lexer.input = (char*)malloc(strlen(buffer) + 1);
-    strcpy(lexer.input, buffer);
-    lexer.position = 0;
-    lexer.ch = lexer.input[lexer.position];
-
-    free(buffer);
-
-    /* creating pointer to the stored tokens and keeping
-     * track of the size 
-     */
-    Token* tokens = NULL;
-    Token token;
-
-    while ((token = next_token(&lexer)).type != EOF_TYPE) {
-        tokens = (Token*)realloc(tokens, sizeof(Token) * (*len + 1)); 
-        tokens[*len] = token; 
-        ++(*len);
-    }
-
-    fclose(fp);
-    free(lexer.input); 
-    return tokens;
-}
-
 Token next_token(Lexer* lexer) {
     Token token;
     char current_ch = lexer->ch;
 
-    if (lexer->position >= strlen(lexer->input) && lexer->ch == '\0') {
+    if (lexer->position >= strlen(lexer->input)) {
         token.type = EOF_TYPE;
         token.content = NULL;
         return token;
@@ -190,89 +136,90 @@ Token next_token(Lexer* lexer) {
         case '&':
             token.type = AND;
             break;
-        case '\n':
-            skip_whitespace(lexer);
-            return next_token(lexer);
         default:
-            if (isalnum(lexer->ch)) {
-                capture_token(lexer, &token);
-            }
-            forward(lexer);
-            return token;
+            token.type = ALPHNUM;
     }
     
-    /* allocating lexer->ch to a string and assigning token.content
-     * unless lexer->ch is alphanumeric  
-     */
-    
-    // note: suspected memory corruption bug here
-    if (current_ch != '\"' && current_ch != '\'') {
-        char token_content[2] = {current_ch};
-        token.content = str_x_dup(token_content);
+    if (token.type == ALPHNUM) {
+        token.content = capture_token(lexer);
+        token.type = lexer->last_type;
+    }
+    else {
+        size_t content_length = 1; 
+        token.content = (char*)malloc(content_length + 1); 
+        if (token.content == NULL) {
+            perror("could not allocate memory");
+            exit(EXIT_FAILURE);
+        }
+        token.content[0] = current_ch; 
+        token.content[1] = '\0'; 
     }
 
+    lexer->last_type = token.type;
     forward(lexer);
     return token;
 }
 
 static void skip_whitespace(Lexer* lexer) {
-    while (isspace(lexer->ch) && lexer->position < strlen(lexer->input))
+    while (isspace(lexer->ch) && lexer->position < lexer->length)
         forward(lexer);
 }
 
-static uint8_t is_valid(uint8_t ch) {
-    if (isalnum(ch)) {
-        return 1;
-    }
-    return 0;
-}
-
-static void capture_token(Lexer* lexer, Token* token) {
+static char* capture_token(Lexer* lexer) {
     size_t len = 0;
 
-    while (lexer->position + len < strlen(lexer->input) && is_valid(lexer->input[lexer->position + len])) {
+    while (lexer->position + len < lexer->length && isalnum(lexer->input[lexer->position + len])) {
         ++len;
     }
 
-    if (lexer->position > 0 && (bpeek(lexer) == '\"' || (bpeek(lexer) == '\'' && fpeek(lexer) == bpeek(lexer)))) {
-        token->type = TEXT;
-    }
-
     /* allocate the needed memory */
-    token->content = (char*)malloc(len + 1);
-    if (token->content == NULL)
-        return;
+    char* str = (char*)malloc(len + 1);
+
+    if (str == NULL) {
+        perror("could not allocate memory");
+        exit(EXIT_FAILURE);
+    }
 
     for (size_t i = 0; i < len; ++i) {
-        token->content[i] = lexer->input[lexer->position + i];
+        str[i] = lexer->input[lexer->position + i];
     }
 
-    token->content[len] = '\0';
-    lexer->position += len; 
+    str[len] = '\0';
+
+    // Check element keywords
+    // bugged stuff goin on here!
+    /*
+    for (size_t i = 0; i < ELMNT_KWORD_COUNT; ++i) {
+        if (strcmp(str, element_keywords[i]) == 0) {
+            lexer->last_type = ELEMENT_KWORD;
+            return str;
+        }
+    }
+
+
+    // Check attribute keywords
+    for (size_t i = 0; i < ATRBT_KWORD_COUNT; ++i) {
+        if (strcmp(str, attribute_keywords[i]) == 0) {
+            lexer->last_type = ATTRIBUTE_KWORD;
+            return str;
+        }
+    } 
+
+    printf("Captured token: %s\n", str); 
+
+    for (size_t i = 0; i < len; ++i) {
+        forward(lexer);
+    }
+    */
+    
+    lexer->last_type = OTHER;
+    lexer->position += len;
     lexer->ch = lexer->input[lexer->position];
-
-    if (token->type != TEXT) {
-        // iter element keywords
-        for (size_t i = 0; i < 115; ++i) {
-            if (strcmp(token->content, element_keywords[i]) == 0) {
-                token->type = ELEMENT_KWORD;
-                return;
-            }
-        }
-
-        for (size_t i = 0; i < 160; ++i) {
-            if (strcmp(token->content, attribute_keywords[i]) == 0) {
-                token->type = ATTRIBUTE_KWORD;
-                return;
-            }
-        }
-    }
-
-    token->type = OTHER;
+    return str;
 }
 
 static uint8_t fpeek(Lexer* lexer) {
-    if (lexer->position + 1 < strlen(lexer->input)) {
+    if (lexer->position + 1 < lexer->length) {
         return lexer->input[lexer->position + 1];
     }
 
@@ -288,7 +235,7 @@ static uint8_t bpeek(Lexer* lexer) {
 }
 
 static void forward(Lexer* lexer) {
-    if (lexer->ch != '\0' && lexer->position < strlen(lexer->input)) {
+    if (lexer->ch != '\0' && lexer->position < lexer->length) {
         lexer->ch = lexer->input[++lexer->position];
     }
 }

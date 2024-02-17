@@ -6,41 +6,17 @@
 #include "../../src/utils.h"
 
 void test_next_token() {
-    char* path = "gnu";
-    FILE* fp = fopen(path, "r");
-    if (fp == NULL)
-        return;
 
-    long file_size = get_file_size(path);
-    char* buffer = (char*)malloc(file_size + 1);
-    if (buffer == NULL) {
-        fclose(fp);
-        perror("could not allocate memory");
-        return;
-    }
-
-    size_t read_size = fread(buffer, 1, file_size, fp); 
-
-    /* Making sure the read size is the same as 
-     * the size of the file 
-     */
-    if (read_size != file_size) {
-        fclose(fp);
-        free(buffer);
-        perror("could not read file");
-        return;
-    }
-
-    buffer[file_size] = '\0';
+    char* input = "=<= divclass=\"test\">TestElement</div>";
 
     // initiate lexer
     Lexer lexer;
-    lexer.input = (char*)malloc(strlen(buffer) + 1);
-    strcpy(lexer.input, buffer);
+    lexer.input = (char*)malloc(strlen(input) + 1);
+    strcpy(lexer.input, input);
     lexer.position = 0;
+    lexer.length = strlen(lexer.input);
     lexer.ch = lexer.input[lexer.position];
 
-    free(buffer);
     /* creating pointer to the stored tokens and keeping
      * track of the size 
      */
@@ -50,24 +26,10 @@ void test_next_token() {
         free(token.content);
     }
 
-    fclose(fp);
     free(lexer.input); 
 }
 
-void test_lex() {
-    size_t token_count;
-    Token* tokens = lex("gnu.html", &token_count);
-
-    for (int i = 0; i < token_count; ++i) {
-        printf("%s\n", tokens[i].content);
-    }
-    
-    free(tokens);
-}
-
-
 int main(void) {
-    //test_lex();
     test_next_token();
 
     return 0;

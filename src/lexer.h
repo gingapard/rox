@@ -41,14 +41,15 @@ typedef struct {
 
 typedef struct {
 	char* input;
+    enum TokenType last_type;
 	uint32_t position;
+    size_t length;
 	uint8_t ch;
 } Lexer;
 
 extern const char* element_keywords[];
 extern const char* attribute_keywords[];
 
-Token* lex(char* str, size_t* len);
 Token next_token(Lexer* lexer);
 
 #endif
