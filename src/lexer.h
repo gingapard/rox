@@ -4,11 +4,9 @@
 #include <stdint.h>
 
 enum TokenType {
-    ELEMENT_KWORD,
-    ATTRIBUTE_KWORD,
-    TEXT,
-    OTHER,
-    ALPHNUM,
+    LITERAL,
+    ELMNT,
+    ATRBT,
 	L_ANGLE,
 	R_ANGLE,
 	L_BRACKET,
@@ -25,12 +23,16 @@ enum TokenType {
 	SEMI_COLON,
 	EQUALS,
 	MOD,
+    ADD,
+    ASTERISK,
+    SUBTRACT,
 	F_SLASH,
 	HASH,
 	DOT,
 	AT,
 	AND,
 	NEW_LINE,
+    OTHER,
 	EOF_TYPE,
 };
 
@@ -47,9 +49,7 @@ typedef struct {
 	uint8_t ch;
 } Lexer;
 
-extern const char* element_keywords[];
-extern const char* attribute_keywords[];
-
+Token* lex(char* path, intmax_t file_size, size_t* len);
 Token next_token(Lexer* lexer);
 
 #endif

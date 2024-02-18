@@ -1,9 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "../../src/lexer.h"
 #include "../../src/utils.h"
+
+void test_lex() {
+
+    char* input = xfread_full("gnu");
+    size_t len = 0;
+    Token* tokens = (Token*)lex(input, strlen(input), &len);
+
+    for (size_t i = 0; i < len; ++i) {
+        printf("%d: %s\n", tokens[i].type, tokens[i].content);
+    }
+
+    for (size_t i = 0; i < len; ++i) {
+        free(tokens[i].content);
+    }
+
+    free(tokens);
+}
 
 void test_next_token() {
 
@@ -30,7 +48,7 @@ void test_next_token() {
 }
 
 int main(void) {
-    test_next_token();
-
+    test_lex();
+    // test_next_token();
     return 0;
 }

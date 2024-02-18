@@ -27,11 +27,11 @@ char* str_x_dup(char* str) {
     return alloced_str;
 }
 
-long get_file_size(const char* file_path) {
+intmax_t get_file_size(const char* file_path) {
     FILE* fp = fopen(file_path, "rb");
 
     if (fp == NULL) {
-        perror("Errpr opening file");
+        perror("Error opening file");
         return -1;
     }
 
@@ -41,7 +41,7 @@ long get_file_size(const char* file_path) {
         return -1;
     }
 
-    long file_size = ftell(fp);
+    intmax_t file_size = ftell(fp);
 
     if (file_size == -1) {
         perror("Could not get file size");
@@ -52,3 +52,38 @@ long get_file_size(const char* file_path) {
     fclose(fp);
     return file_size;
 }
+
+char* xfread_full(const char* path) {
+    intmax_t file_size = get_file_size(path);
+    if (file_size == -1) {
+        printf("Error reading file size: %s\n", path);
+        return NULL;
+    }
+
+    FILE* fp = fopen(path, "rb");
+    if (fp == NULL) {
+        perror("Error opening file");
+        return NULL;
+    }
+
+    char* buffer = (char*)malloc(file_size + 1);
+    if (buffer == NULL) {
+        fclose(fp);
+        perror("Could not allocate memory");
+        return NULL;
+    }
+
+    size_t read_size = fread(buffer, 1, file_size, fp);
+
+    if (read_size != (size_t)file_size) {
+        fclose(fp);
+        free(buffer);
+        perror("Error reading file");
+        return NULL;
+    }
+
+    buffer[file_size] = '\0';
+    fclose(fp);
+    return buffer;
+}
+
