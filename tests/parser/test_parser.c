@@ -5,8 +5,7 @@
 
 int main(void) {
 	
-	SyntaxTree* st = parse("gnu.html");
+    parse("gnu");
 
-	free(st);
 	return 0;
 }

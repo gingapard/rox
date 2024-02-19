@@ -159,14 +159,13 @@ typedef enum {
 } AttributeType;
 
 typedef struct {
-	Token* input;
+	Token* tokens;
 	uint32_t position;
 	Token token;
 } Parser;
 
 typedef struct {
 	AttributeType type;
-	char* name;
 	char* content;
 } Attribute;
 

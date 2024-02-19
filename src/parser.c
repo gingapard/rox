@@ -54,40 +54,52 @@ const char* attribute_keywords[160] = {
     "value"
 };
 
+static void free_tokens(Token* tokens, size_t count);
 static void free_tags(Tag* tags, size_t size);
-static void pop_tag(Tag* tag, Tag* tags, size_t size);
-static void push_tag(Tag* tag, Tag* tags, size_t size);
+static void pop_tag(Tag* tag, Tag** tags, size_t* size);
+static void push_tag(Tag* tag, Tag** tags, size_t* size);
 
 SyntaxTree* parse(char* path) {
-    SyntaxTree* st;
+    SyntaxTree* st = (SyntaxTree*)malloc(sizeof(SyntaxTree));
 
-    size_t token_count;
+    size_t token_count = 0;
     Token* tokens = lex(path, get_file_size(path), &token_count);
 
     /* init parser, which will get tokens
     * provided by the lexer.
     */
+
     Parser parser;
-    parser.input = tokens;
-    parser.token = parser.input[0];
+    parser.tokens = tokens;
+    parser.token = parser.tokens[0];
     parser.position = 0;
-    
 
     /*storing the tags(parsed tokens).
      * Using allocation to heap as html documents
      * are not expected to be large 
      */
+
     size_t tag_count = 0;
-    Tag* tags = (Tag*)malloc(sizeof(Tag*));
+    Tag* tags = (Tag*)malloc(sizeof(Tag));
     if (tags == NULL) {
         fprintf(stderr, "Error during allocation");
         return st;
     }
 
-    free(parser.input);
-    free(tokens);
+    /* read & parse tokens */
+    
+    
+
+    free_tokens(parser.tokens, token_count);
+    free(parser.tokens);
     free_tags(tags, tag_count);
     return st;
+}
+
+static void free_tokens(Token* tokens, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        free(tokens[i].content);
+    }
 }
 
 static void free_tags(Tag* tags, size_t size) {
@@ -96,23 +108,32 @@ static void free_tags(Tag* tags, size_t size) {
             for (size_t j = 0; j < tags[i].attributes_count; ++j) {
                 free(tags[i].attributes[j].content); 
             }
-            free(tags[i].attributes); 
+            free(tags[i].attributes);
         }
     }
 }
 
-static void push_tag(Tag* tag, Tag* tags, size_t size) {
-    tags = (Tag*)realloc(tags, (size + 1) * sizeof(Tag));
-    if (tags == NULL)
+static void push_tag(Tag* tag, Tag** tags, size_t* size) {
+    Tag* temp = (Tag*)realloc(*tags, (*size + 1) * sizeof(Tag));
+    if (temp == NULL) {
+        fprintf(stderr, "Error during allocation");
         return;
+    }
 
-    tags[size] = *tag;
+    *tags = temp;
+    (*tags)[*size] = *tag;
+    (*size)++;
 }
 
-static void pop_tag(Tag* tag, Tag* tags, size_t size) {
-    if (size > 0) {
-        tags = (Tag*)realloc(tags, (size - 1) * sizeof(Tag));
-        if (tags == NULL) 
+static void pop_tag(Tag* tag, Tag** tags, size_t* size) {
+    if (*size > 0) {
+        Tag* temp = (Tag*)realloc(*tags, (*size - 1) * sizeof(Tag));
+        if (temp == NULL) {
+            fprintf(stderr, "Error during allocation");
             return;
-    }   
+        }
+
+        *tags = temp;
+        (*size)--;
+    }
 }
