@@ -55,9 +55,9 @@ const char* attribute_keywords[160] = {
 };
 
 static void free_tokens(Token* tokens, size_t count);
-static void free_tags(Tag* tags, size_t size);
-static void pop_tag(Tag* tag, Tag** tags, size_t* size);
-static void push_tag(Tag* tag, Tag** tags, size_t* size);
+static void free_elements(Element* elements, size_t size);
+static void pop_element(Element* element, Element** elements, size_t* size);
+static void push_element(Element* element, Element** elements, size_t* size);
 
 SyntaxTree* parse(char* path) {
     SyntaxTree* st = (SyntaxTree*)malloc(sizeof(SyntaxTree));
@@ -74,25 +74,26 @@ SyntaxTree* parse(char* path) {
     parser.token = parser.tokens[0];
     parser.position = 0;
 
-    /*storing the tags(parsed tokens).
+    /*storing the elements(parsed tokens).
      * Using allocation to heap as html documents
      * are not expected to be large 
      */
 
-    size_t tag_count = 0;
-    Tag* tags = (Tag*)malloc(sizeof(Tag));
-    if (tags == NULL) {
+    size_t element_count = 0;
+    Element* elements = (Element*)malloc(sizeof(Element));
+    if (elements == NULL) {
         fprintf(stderr, "Error during allocation");
         return st;
     }
 
     /* read & parse tokens */
+
     
     
 
     free_tokens(parser.tokens, token_count);
     free(parser.tokens);
-    free_tags(tags, tag_count);
+    free_elements(elements, element_count);
     return st;
 }
 
@@ -102,38 +103,38 @@ static void free_tokens(Token* tokens, size_t count) {
     }
 }
 
-static void free_tags(Tag* tags, size_t size) {
+static void free_elements(Element* elements, size_t size) {
     for (size_t i = 0; i < size; ++i) {
-        if (tags[i].attributes_count != 0) {
-            for (size_t j = 0; j < tags[i].attributes_count; ++j) {
-                free(tags[i].attributes[j].content); 
+        if (elements[i].attributes_count != 0) {
+            for (size_t j = 0; j < elements[i].attributes_count; ++j) {
+                free(elements[i].attributes[j].content); 
             }
-            free(tags[i].attributes);
+            free(elements[i].attributes);
         }
     }
 }
 
-static void push_tag(Tag* tag, Tag** tags, size_t* size) {
-    Tag* temp = (Tag*)realloc(*tags, (*size + 1) * sizeof(Tag));
+static void push_element(Element* element, Element** elements, size_t* size) {
+    Element* temp = (Element*)realloc(*elements, (*size + 1) * sizeof(Element));
     if (temp == NULL) {
         fprintf(stderr, "Error during allocation");
         return;
     }
 
-    *tags = temp;
-    (*tags)[*size] = *tag;
+    *elements = temp;
+    (*elements)[*size] = *element;
     (*size)++;
 }
 
-static void pop_tag(Tag* tag, Tag** tags, size_t* size) {
+static void pop_element(Element* element, Element** elements, size_t* size) {
     if (*size > 0) {
-        Tag* temp = (Tag*)realloc(*tags, (*size - 1) * sizeof(Tag));
+        Element* temp = (Element*)realloc(*elements, (*size - 1) * sizeof(Element));
         if (temp == NULL) {
             fprintf(stderr, "Error during allocation");
             return;
         }
 
-        *tags = temp;
+        *elements = temp;
         (*size)--;
     }
 }

@@ -6,6 +6,8 @@
 #include "lexer.h"
 #include "utils.h"
 
+typedef struct SyntaxTreeNode SyntaxTreeNode;
+
 typedef enum {
 	A,
 	ABBR,
@@ -173,18 +175,18 @@ typedef struct {
 	TagType type;
 	Attribute* attributes;
 	size_t attributes_count;
-	uint8_t open;
-} Tag;
-
-typedef struct {
-	TagType type;
-	Attribute* attributes;
-	size_t attributes_count;
 	char* content;
 } Element;
 
+struct SyntaxTreeNode {
+    SyntaxTreeNode* parent;
+    Element element;
+    SyntaxTreeNode** children;
+    size_t children_count;
+};
+
 typedef struct {
-	// to be defined.
+    SyntaxTreeNode* root;
 } SyntaxTree;
 
 SyntaxTree* parse(char* path);
