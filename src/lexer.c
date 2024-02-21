@@ -187,3 +187,10 @@ static void forward(Lexer* lexer) {
     }
 }
 
+void free_tokens(Token* tokens, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        free(tokens[i].content);
+    }
+}
+
+

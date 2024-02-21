@@ -51,5 +51,6 @@ typedef struct {
 
 Token* lex(char* path, intmax_t file_size, size_t* len);
 Token next_token(Lexer* lexer);
+void free_tokens(Token* tokens, size_t count);
 
 #endif

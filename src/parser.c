@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "parser.h"
+#include "lexer.h"
 #include "utils.h"
 
 const char* element_keywords[115] = {
@@ -54,7 +55,6 @@ const char* attribute_keywords[160] = {
     "value"
 };
 
-static void free_tokens(Token* tokens, size_t count);
 static void free_elements(Element* elements, size_t size);
 static void pop_element(Element* element, Element** elements, size_t* size);
 static void push_element(Element* element, Element** elements, size_t* size);
@@ -73,68 +73,68 @@ SyntaxTree* parse(char* path) {
     parser.tokens = tokens;
     parser.token = parser.tokens[0];
     parser.position = 0;
+    
+    /* allocate root node */
+    SyntaxTreeNode* root = (SyntaxTreeNode*)malloc(sizeof(SyntaxTreeNode));
+    if (root == NULL) {
+        fprintf(stderr, "Error allocating root node\n");
+        return NULL;
+    }
+    
 
-    /*storing the elements(parsed tokens).
-     * Using allocation to heap as html documents
-     * are not expected to be large 
+    
+    
+
+    /* Read & parse tokens.
+     * 
+     * Reminder: check if tokens content
+     * is equal to strings in element_keywords &
+     * attribute_keywords.
      */
 
-    size_t element_count = 0;
-    Element* elements = (Element*)malloc(sizeof(Element));
-    if (elements == NULL) {
-        fprintf(stderr, "Error during allocation");
-        return st;
-    }
-
-    /* read & parse tokens */
+    
 
     
     
 
     free_tokens(parser.tokens, token_count);
     free(parser.tokens);
-    free_elements(elements, element_count);
     return st;
 }
 
-static void free_tokens(Token* tokens, size_t count) {
+static void free_element(Element element, size_t count) {
     for (size_t i = 0; i < count; ++i) {
-        free(tokens[i].content);
-    }
-}
-
-static void free_elements(Element* elements, size_t size) {
-    for (size_t i = 0; i < size; ++i) {
-        if (elements[i].attributes_count != 0) {
-            for (size_t j = 0; j < elements[i].attributes_count; ++j) {
-                free(elements[i].attributes[j].content); 
-            }
-            free(elements[i].attributes);
+        free(element.content);
+        for (size_t j = 0; j < element.attributes_count; ++j) {
+            free(element.attributes[j].content);
         }
+        free(element.attributes);
     }
 }
 
-static void push_element(Element* element, Element** elements, size_t* size) {
-    Element* temp = (Element*)realloc(*elements, (*size + 1) * sizeof(Element));
+// note: replace with push_node & pop_node
+static void push_node(SyntaxTreeNode** root, SyntaxTreeNode* node, size_t* size) {
+    SyntaxTreeNode* temp = (SyntaxTreeNode*)realloc(*root, (*size + 1) * sizeof(SyntaxTreeNode));
     if (temp == NULL) {
-        fprintf(stderr, "Error during allocation");
+        fprintf(stderr, "could not reallocate root node");
         return;
     }
 
-    *elements = temp;
-    (*elements)[*size] = *element;
-    (*size)++;
+    *root = temp;
+    (*root)[*size] = *node;
+    ++(*size);
 }
 
-static void pop_element(Element* element, Element** elements, size_t* size) {
+static void pop_node(SyntaxTreeNode** root, SyntaxTreeNode* node, size_t* size) {
     if (*size > 0) {
-        Element* temp = (Element*)realloc(*elements, (*size - 1) * sizeof(Element));
+        SyntaxTreeNode* temp = (SyntaxTreeNode*)realloc(*root, (*size - 1) * sizeof(SyntaxTreeNode));
         if (temp == NULL) {
-            fprintf(stderr, "Error during allocation");
+            fprintf(stderr, "could not reallocate root node");
             return;
         }
 
-        *elements = temp;
-        (*size)--;
+        *root = temp;
+        (*root)[*size] = *node;
+        --(*size);
     }
 }
