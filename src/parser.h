@@ -9,6 +9,7 @@
 typedef struct SyntaxTreeNode SyntaxTreeNode;
 
 typedef enum {
+    UNKNOWN_TAG,
 	A,
 	ABBR,
 	ADDRESS,
@@ -123,6 +124,7 @@ typedef enum {
 } TagType;
 
 typedef enum {
+    UNKNOWN_ATTRIBUTE,
 	ACCESSKEY,
 	ALIGN,
 	ALT,
@@ -173,7 +175,7 @@ typedef struct {
 
 typedef struct {
 	TagType type;
-	Attribute* attributes;
+	Attribute** attributes;
 	size_t attributes_count;
 	char* content;
 } Element;
@@ -189,6 +191,7 @@ typedef struct {
     SyntaxTreeNode* root;
 } SyntaxTree;
 
-SyntaxTree* parse(char* path);
+SyntaxTree parse(char* path);
+void free_tree(SyntaxTreeNode* root);
 
 #endif
