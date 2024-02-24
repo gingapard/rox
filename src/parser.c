@@ -63,10 +63,22 @@ static void push_node(SyntaxTreeNode* parent, SyntaxTreeNode* node);
 SyntaxTree parse(char* path) {
     SyntaxTree st;
 
+    char* input = xfread_full(path);
     size_t token_count = 0;
-    Token* tokens = lex(path, get_file_size(path), &token_count);
 
-    /* init parser, which will get tokens
+    /* Note to Myself:
+     * DONT FREE tokens!
+     */
+    Token* tokens = lex(input, get_file_size(path), &token_count);
+    free(input);
+
+    /* print token content test
+    for (int i = 0; i < token_count; ++i) {
+        printf("%s\n", tokens[i].content);
+    }
+    */
+
+   /* init parser, which will get tokens
     * provided by the lexer.
     */
 
@@ -74,6 +86,8 @@ SyntaxTree parse(char* path) {
     parser.tokens = tokens;
     parser.token = parser.tokens[0];
     parser.position = 0;
+
+
     
     /* allocate root node */
     st.root = (SyntaxTreeNode*)malloc(sizeof(SyntaxTreeNode));
@@ -83,21 +97,26 @@ SyntaxTree parse(char* path) {
         free(parser.tokens);
         return st;
     }
+
+
+    /*              - child
+     *      - child - child
+     * root - child - child
+     *      - child - child
+     *              - child
+     */
     
-    // init root node
+    /* init root node */
     st.root->parent = NULL;
     st.root->element = init_element(UNKNOWN_TAG, 0, NULL);
     st.root->children = NULL;
     st.root->children_count = 0;
 
-    /* Read & parse tokens.
-     * 
-     * Reminder: check if tokens content
-     * is equal to strings in element_keywords &
-     * attribute_keywords.
-     */
-    
-
+    /* parse */
+    for (size_t i = 0; i < token_count; ++i) {
+        
+    }
+      
     free_tokens(parser.tokens, token_count);
     free(parser.tokens);
     return st;

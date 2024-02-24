@@ -5,8 +5,6 @@
 
 enum TokenType {
     LITERAL,
-    ELMNT,
-    ATRBT,
 	L_ANGLE,
 	R_ANGLE,
 	L_BRACKET,
