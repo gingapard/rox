@@ -165,7 +165,9 @@ typedef enum {
 typedef struct {
 	Token* tokens;
 	uint32_t position;
+    size_t length;
 	Token token;
+    int in_tag;
 } Parser;
 
 typedef struct {
