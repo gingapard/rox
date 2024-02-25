@@ -113,9 +113,8 @@ SyntaxTree parse(char* path) {
     st.root->children_count = 0;
 
     /* parse */
-    for (size_t i = 0; i < token_count; ++i) {
-        
-    }
+    /* note: use stack data structure */
+    for (size_t i = 0; i < token_count; ++i) {}
       
     free_tokens(parser.tokens, token_count);
     free(parser.tokens);
