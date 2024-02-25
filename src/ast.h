@@ -168,6 +168,7 @@ typedef struct {
     size_t length;
 	Token token;
     int in_tag;
+    TagType tag;
 } Parser;
 
 typedef struct {

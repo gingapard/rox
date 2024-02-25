@@ -29,6 +29,7 @@ enum TokenType {
 	DOT,
 	AT,
 	AND,
+    DOLLAR,
 	NEW_LINE,
     OTHER,
 	EOF_TYPE,

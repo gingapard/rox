@@ -128,6 +128,9 @@ Token next_token(Lexer* lexer) {
         case '&':
             token.type = AND;
             break;
+        case '$':
+            token.type = DOLLAR;
+            break;
         default:
             if (isalnum(current_ch)) {
                 token.type = LITERAL;
