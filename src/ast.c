@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "parser.h"
+#include "ast.h"
 #include "lexer.h"
 #include "utils.h"
 
