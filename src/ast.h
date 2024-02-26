@@ -164,8 +164,8 @@ typedef enum {
 
 typedef struct {
 	Token* tokens;
+    size_t token_count;
 	uint32_t position;
-    size_t length;
 	Token token;
     int in_tag;
     TagType tag;

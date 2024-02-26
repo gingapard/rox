@@ -92,7 +92,7 @@ SyntaxTree parse(char* path) {
 
     parser->tokens = tokens;
     parser->token = parser->tokens[0];
-    parser->length = token_count;
+    parser->token_count = token_count;
     parser->position = 0;
     parser->in_tag = 0;
     
@@ -114,6 +114,7 @@ SyntaxTree parse(char* path) {
      */
     
     /* init root node */
+    /* note: (tmp) root node must be inited in while loop */
     st.root->parent = NULL;
     st.root->element = _init_element(UNKNOWN_TAG, 0, NULL);
     st.root->children = NULL;
@@ -123,7 +124,7 @@ SyntaxTree parse(char* path) {
     /* note: use stack data structure for parsing */
     // Token token_stack[size]
     
-    while (parser->position < parser->length && parser->token.type != EOF_TYPE) {
+    while (parser->position < parser->token_count && parser->token.type != EOF_TYPE) {
         printf("%s\n", parser->token.content);
         _forward(parser);
         _ignore_comments(parser);
@@ -137,32 +138,32 @@ SyntaxTree parse(char* path) {
 
 static void _ignore_comments(Parser* parser) {
     // ignore HTML comments = <!-- -->
-    while (parser->position < parser->length - 1 &&
+    while (parser->position < parser->token_count - 1 &&
            parser->token.type == L_ANGLE &&
            parser->tokens[parser->position + 1].type == BANG ) {
         while (!(parser->token.type == R_ANGLE &&
                  parser->tokens[parser->position - 1].type == SUBTRACT &&
                  parser->tokens[parser->position - 2].type == SUBTRACT)) {
             _forward(parser);
-            if (parser->position >= parser->length)
+            if (parser->position >= parser->token_count)
                 break;
         }
-        if (parser->position >= parser->length)
+        if (parser->position >= parser->token_count)
             break;
         _forward(parser); // move past the closing -->
     }
 
     // ignore JavaScript and CSS multi-line comments = /* */
-    while (parser->position < parser->length - 1 &&
+    while (parser->position < parser->token_count - 1 &&
            parser->token.type == F_SLASH &&
            parser->tokens[parser->position + 1].type == ASTERISK) {
         while (!(parser->token.type == ASTERISK &&
                  parser->tokens[parser->position + 1].type == F_SLASH)) {
             _forward(parser);
-            if (parser->position >= parser->length)
+            if (parser->position >= parser->token_count)
                 break;
         }
-        if (parser->position >= parser->length)
+        if (parser->position >= parser->token_count)
             break;
         _forward(parser); // move past the closing */
         _forward(parser);
@@ -170,7 +171,7 @@ static void _ignore_comments(Parser* parser) {
 }
 
 static void _forward(Parser* parser) {
-    if (parser->position < parser->length && parser->token.type != EOF_TYPE) {
+    if (parser->position < parser->token_count && parser->token.type != EOF_TYPE) {
         parser->token = parser->tokens[++parser->position];
     }
 }

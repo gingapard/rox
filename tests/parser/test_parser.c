@@ -5,7 +5,7 @@
 
 int main(void) {
 	
-    SyntaxTree st = parse("testfile");
+    SyntaxTree st = parse("gnu");
     free_tree(st.root);
 
 	return 0;
