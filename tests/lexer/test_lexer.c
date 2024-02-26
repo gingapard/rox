@@ -12,8 +12,10 @@ void test_lex() {
     size_t token_count = 0;
     Token* tokens = (Token*)lex(input, strlen(input), &token_count);
 
-    for (int i = 0; i < token_count; ++i) {
+    int i = 0;
+    while (tokens[i].type != EOF_TYPE) {
         printf("%s\n", tokens[i].content);
+        ++i;
     }
 
     free_tokens(tokens, token_count);

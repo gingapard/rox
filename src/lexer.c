@@ -7,10 +7,10 @@
 #include "lexer.h"
 
 Token next_token(Lexer* lexer);
-static char* capture_token(Lexer* lexer); 
-static void forward(Lexer* lexer);
+static char* _capture_token(Lexer* lexer); 
+static void _forward(Lexer* lexer);
 
-Token* lex(char* input, intmax_t file_size, size_t* token_len) {
+Token* lex(char* input, intmax_t file_size, size_t* token_count) {
 
     // initiate lexer
     Lexer lexer;
@@ -24,19 +24,37 @@ Token* lex(char* input, intmax_t file_size, size_t* token_len) {
      * track of the size 
      */
 
-    Token* tokens = NULL;
+    Token* tokens = (Token*)malloc(sizeof(Token)); 
+    if (tokens == NULL) {
+        perror("could not allocate memory for tokens");
+        free(lexer.input);
+        return NULL;
+    }
+
     Token token;
 
     while ((token = next_token(&lexer)).type != EOF_TYPE) {
-        tokens = (Token*)realloc(tokens, sizeof(Token) * (*token_len + 1)); 
+        tokens[*token_count] = token;
+        ++(*token_count);
+
+        tokens = (Token*)realloc(tokens, sizeof(Token) * (*token_count + 1)); 
         if (tokens == NULL) {
             perror("could not allocate memory for tokens");
             free(lexer.input);
             return NULL;
         }
+    }
+    
+    token.type = EOF_TYPE;
+    tokens[*token_count] = token;
+    ++(*token_count);
 
-        tokens[*token_len] = token; 
-        ++(*token_len);
+    // for EOF_TYPE
+    tokens = (Token*)realloc(tokens, sizeof(Token) * (*token_count + 1));
+    if (tokens == NULL) {
+        perror("could not allocate memory for tokens");
+        free(lexer.input);
+        return NULL;
     }
 
     free(lexer.input); 
@@ -55,7 +73,7 @@ Token next_token(Lexer* lexer) {
     
     switch (lexer->ch) {
         case ' ':
-            forward(lexer);
+            _forward(lexer);
             return next_token(lexer);
         case '<':
             token.type = L_ANGLE;
@@ -136,13 +154,13 @@ Token next_token(Lexer* lexer) {
                 token.type = LITERAL;
             }
             else {
-                forward(lexer);
+                _forward(lexer);
                 return next_token(lexer);
             }
     }
     
     if (token.type == LITERAL) {
-        token.content = capture_token(lexer);
+        token.content = _capture_token(lexer);
     }
     else {
         size_t content_length = 1; 
@@ -154,20 +172,20 @@ Token next_token(Lexer* lexer) {
         }
         token.content[0] = current_ch; 
         token.content[1] = '\0'; 
-        forward(lexer);
+        _forward(lexer);
     }
 
     lexer->last_type = token.type;
     return token;
 }
 
-static char* capture_token(Lexer* lexer) {
+static char* _capture_token(Lexer* lexer) {
     size_t len = 0;
     size_t start_position = lexer->position;
 
     while (lexer->position < lexer->length && isalnum(lexer->input[lexer->position])) {
         ++len;
-        forward(lexer);
+        _forward(lexer);
     }
 
     char* str = (char*)malloc(len + 1);
@@ -184,7 +202,7 @@ static char* capture_token(Lexer* lexer) {
     return str;
 }
 
-static void forward(Lexer* lexer) {
+static void _forward(Lexer* lexer) {
     if (lexer->ch != '\0' && lexer->position < lexer->length) {
         lexer->ch = lexer->input[++lexer->position];
     }
