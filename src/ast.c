@@ -58,8 +58,8 @@ const char* attribute_keywords[160] = {
 static void _ignore_comments(Parser* parser);
 static void _forward(Parser* parser);
 static void _free_element(Element element);
-static Element _init_element(TagType type, size_t attributes_count, char* content);
-static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, TagType type, size_t attributes_count, char* content);
+static Element _init_element(ElementType type, size_t attributes_count, char* content);
+static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementType type, size_t attributes_count, char* content);
 static void _push_node(SyntaxTreeNode* parent, SyntaxTreeNode* node);
 void free_tree(SyntaxTreeNode* root);
 
@@ -114,7 +114,6 @@ SyntaxTree parse(char* path) {
      */
     
     /* init root node */
-    /* note: (tmp) root node must be inited in while loop */
     st.root->parent = NULL;
     st.root->element = _init_element(UNKNOWN_TAG, 0, NULL);
     st.root->children = NULL;
@@ -122,8 +121,28 @@ SyntaxTree parse(char* path) {
 
     /* parse */
     /* note: use stack data structure for parsing */
-    // Token token_stack[size]
-    
+    /* Root node will be UNKNOWN_TAG.
+     * Stack will keep track of where we are currently.
+     * Not sure if this will be the final solution.
+     * NB: Stack defined as: ElementType[(total literal tokens)];
+     *
+     * Example (1): [html, div, p] stack_ptr = 2;
+     * <html>
+     *      <div>
+     *          <p>Hello <- current position</p>
+     *      </div>
+     * </html>
+     * 
+     * Example (2): [html] stack_ptr = 0;
+     * <html>
+     *      <div>
+     *          <p>Hello</p>
+     *      </div>
+     *      # <- current position
+     * </html>
+     */
+
+
     while (parser->position < parser->token_count && parser->token.type != EOF_TYPE) {
         printf("%s\n", parser->token.content);
         _forward(parser);
@@ -187,7 +206,7 @@ static void _free_element(Element element) {
     free(element.content);
 }
 
-static Element _init_element(TagType type, size_t attributes_count, char* content) {
+static Element _init_element(ElementType type, size_t attributes_count, char* content) {
     Element element;
     element.type = type;
 
@@ -205,7 +224,7 @@ static Element _init_element(TagType type, size_t attributes_count, char* conten
     return element;
 }
 
-static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, TagType type, size_t attributes_count, char* content) {
+static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementType type, size_t attributes_count, char* content) {
     SyntaxTreeNode* node = (SyntaxTreeNode*)malloc(sizeof(SyntaxTreeNode));
     if (node == NULL) {
         fprintf(stderr, "could not allocate memory\n");

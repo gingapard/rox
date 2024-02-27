@@ -121,7 +121,7 @@ typedef enum {
 	VAR,
 	VIDEO,
 	WBR,
-} TagType;
+} ElementType;
 
 typedef enum {
     UNKNOWN_ATTRIBUTE,
@@ -168,7 +168,7 @@ typedef struct {
 	uint32_t position;
 	Token token;
     int in_tag;
-    TagType tag;
+    ElementType tag;
 } Parser;
 
 typedef struct {
@@ -177,7 +177,7 @@ typedef struct {
 } Attribute;
 
 typedef struct {
-	TagType type;
+	ElementType type;
 	Attribute** attributes;
 	size_t attributes_count;
 	char* content;
@@ -192,6 +192,7 @@ struct SyntaxTreeNode {
 
 typedef struct {
     SyntaxTreeNode* root;
+    size_t node_count;
 } SyntaxTree;
 
 SyntaxTree parse(char* path);
