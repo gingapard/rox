@@ -268,9 +268,10 @@ typedef struct {
 } SyntaxTree;
 
 typedef struct {
-    ElementType type;
-    SyntaxTreeNode* node;
-} StackItem;
+    SyntaxTreeNode* nodes[100];
+    int top;
+} Stack;
+
 
 SyntaxTree parse(char* path);
 void free_tree(SyntaxTreeNode* root);
