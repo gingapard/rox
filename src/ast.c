@@ -9,7 +9,8 @@
 #include "lexer.h"
 #include "utils.h"
 
-const char* element_keywords[] = {
+const char* element_keywords[111] = {
+    "UNKNOWN_ELEMENT",
     "a", "abbr", "address", "area", "article", "aside", "audio",
     "b", "base", "bdi", "bdo", "blockquote", "body", "br", "button",
     "canvas", "caption", "cite", "code", "col", "colgroup",
@@ -33,7 +34,8 @@ const char* element_keywords[] = {
     "wbr"
 };
 
-const char* attribute_keywords[160] = {
+const char* attribute_keywords[108] = {
+    "UNKNOWN_ATTRIBUTE",
     "accept", "accept-charset", "accesskey", "action", "align", "alt", "async",
     "autocomplete", "autofocus", "autoplay",
     "bgcolor", "border",
@@ -55,15 +57,15 @@ const char* attribute_keywords[160] = {
     "value"
 };
 
-static ElementType check_element_type(char* literal);
 static void _ignore_comments(Parser* parser);
+static ElementType get_element_type(char* literal);
+static AttributeType get_attribute_type(char* literal);
 static Token* _peek(Parser* parser);
 static void _forward(Parser* parser);
 static void _free_element(Element element);
 static Element _init_element(ElementType type, size_t attributes_count, char* content);
 static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementType type, size_t attributes_count, char* content);
 static void _push_node(SyntaxTreeNode* parent, SyntaxTreeNode* node);
-void free_tree(SyntaxTreeNode* root);
 
 SyntaxTree parse(char* path) {
     SyntaxTree st;
@@ -154,14 +156,20 @@ SyntaxTree parse(char* path) {
         switch (parser->token.type) {
             case L_ANGLE:
                 if (_peek(parser)->type == LITERAL) {
-                    // TODO: check type of element
+                    /* TODO: check type of element,
+                     * init node,
+                     * push node,
+                     * push to stack,
+                     */
                 }
+            // TODO: add more cases
 
                 break;
             default:
                 break;
 
         }
+        printf("%s\n", parser->token.content);
         _forward(parser);
     }
       
@@ -177,125 +185,32 @@ static ElementType get_element_type(char* literal) {
         literal[i] = tolower(literal[i]);
     }
 
-    for (int i = 0; i < 115; ++i) {
+    size_t len = sizeof(element_keywords) / sizeof(element_keywords[0]);
+
+    for (int i = 0; i < len; ++i) {
         if (strcmp(literal, element_keywords[i]) == 0) {
-            switch (i) {
-                case 0: return A;
-                case 1: return ABBR;
-                case 2: return ADDRESS;
-                case 3: return AREA;
-                case 4: return ARTICLE;
-                case 5: return ASIDE;
-                case 6: return AUDIO;
-                case 7: return B;
-                case 8: return BASE;
-                case 9: return BDI;
-                case 10: return BDO;
-                case 11: return BLOCKQUOTE;
-                case 12: return BODY;
-                case 13: return BR;
-                case 14: return BUTTON;
-                case 15: return CANVAS;
-                case 16: return CAPTION;
-                case 17: return CITE;
-                case 18: return CODE;
-                case 19: return COL;
-                case 20: return COLGROUP;
-                case 21: return DATA;
-                case 22: return DATALIST;
-                case 23: return DD;
-                case 24: return DEL;
-                case 25: return DETAILS;
-                case 26: return DFN;
-                case 27: return DIALOG;
-                case 28: return DIV;
-                case 29: return DL;
-                case 30: return DT;
-                case 31: return EM;
-                case 32: return EMBED;
-                case 33: return FIELDSET;
-                case 34: return FIGCAPTION;
-                case 35: return FIGURE;
-                case 36: return FOOTER;
-                case 37: return FORM;
-                case 38: return H1;
-                case 39: return H2;
-                case 40: return H3;
-                case 41: return H4;
-                case 42: return H5;
-                case 43: return H6;
-                case 44: return HEAD;
-                case 45: return HEADER;
-                case 46: return HGROUP;
-                case 47: return HR;
-                case 48: return HTML;
-                case 49: return I;
-                case 50: return IFRAME;
-                case 51: return IMG;
-                case 52: return INPUT;
-                case 53: return INS;
-                case 54: return KBD;
-                case 55: return LABEL;
-                case 56: return LEGEND;
-                case 57: return LI;
-                case 58: return LINK;
-                case 59: return MAIN;
-                case 60: return MAP;
-                case 61: return MARK;
-                case 62: return META;
-                case 63: return METER;
-                case 64: return NAV;
-                case 65: return NOSCRIPT;
-                case 66: return OBJECT;
-                case 67: return OL;
-                case 68: return OPTGROUP;
-                case 69: return OPTION;
-                case 70: return OUTPUT;
-                case 71: return P;
-                case 72: return PARAM;
-                case 73: return PRE;
-                case 74: return PROGRESS;
-                case 75: return Q;
-                case 76: return RP;
-                case 77: return RT;
-                case 78: return RUBY;
-                case 79: return S;
-                case 80: return SAMP;
-                case 81: return SCRIPT;
-                case 82: return SECTION;
-                case 83: return SELECT;
-                case 84: return SMALL;
-                case 85: return SOURCE;
-                case 86: return SPAN;
-                case 87: return STRONG;
-                case 88: return STYLE;
-                case 89: return SUB;
-                case 90: return SUMMARY;
-                case 91: return SUP;
-                case 92: return SVG;
-                case 93: return TABLE;
-                case 94: return TBODY;
-                case 95: return TD;
-                case 96: return TEMPLATE;
-                case 97: return TEXTAREA;
-                case 98: return TFOOT;
-                case 99: return TH;
-                case 100: return THEAD;
-                case 101: return TIME;
-                case 102: return TITLE;
-                case 103: return TR;
-                case 104: return TRACK;
-                case 105: return U;
-                case 106: return UL;
-                case 107: return VAR;
-                case 108: return VIDEO;
-                case 109: return WBR;
-                default: return UNKNOWN_ELEMENT;
-            }
+            return (ElementType)i;
         }
     }
 
     return UNKNOWN_ELEMENT;
+}
+
+static AttributeType get_attribute_type(char* literal) {
+    // literal to lowercase
+    for (int i = 0; literal[i]; ++i) {
+        literal[i] = tolower(literal[i]);
+    }
+
+    size_t len = sizeof(attribute_keywords) / sizeof(attribute_keywords[0]);
+
+    for (int i = 0; i < len; ++i) {
+        if (strcmp(literal, attribute_keywords[i]) == 0) {
+            return (AttributeType)i;
+        }
+    }
+
+    return UNKNOWN_ATTRIBUTE;
 }
 
 static void _ignore_comments(Parser* parser) {
@@ -365,16 +280,6 @@ static void _forward(Parser* parser) {
     }
 }
 
-static void _free_element(Element element) {
-    if (element.attributes != NULL) {
-        for (size_t i = 0; i < element.attributes_count; ++i) {
-            free(element.attributes[i]->content);
-        }
-        free(element.attributes);
-    }
-
-    free(element.content);
-}
 
 static Element _init_element(ElementType type, size_t attributes_count, char* content) {
     Element element;
@@ -439,6 +344,17 @@ static void _push_node(SyntaxTreeNode* parent, SyntaxTreeNode* node) {
 
     // set parent
     node->parent = parent;
+}
+
+static void _free_element(Element element) {
+    if (element.attributes != NULL) {
+        for (size_t i = 0; i < element.attributes_count; ++i) {
+            free(element.attributes[i]->content);
+        }
+        free(element.attributes);
+    }
+
+    free(element.content);
 }
 
 void free_tree(SyntaxTreeNode* root) {
