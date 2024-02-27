@@ -146,6 +146,7 @@ SyntaxTree parse(char* path) {
      */
 
     // Stack for parsing tokens
+    SyntaxTreeNode* current_parent = st.root;
     StackItem stack[100];
     int top = -1;
 
@@ -157,10 +158,23 @@ SyntaxTree parse(char* path) {
             case L_ANGLE:
                 if (_peek(parser)->type == LITERAL) {
                     /* TODO: check type of element,
-                     * init node,
+                     * collect element attributes && check type,
+                     * collect element content,
+                     * init node (&& element),
                      * push node,
                      * push to stack,
                      */
+
+                    // Move to to-be-defined parse_element function
+                    // _peek and get element_type
+                    ElementType type = get_element_type(_peek(parser)->content);
+                    size_t attributes_count = 0;
+                    /* 1. PARSE element attributes,
+                     * NB: Call get_attribute_type,
+                     * 2. collect content to string,
+                     */
+                    Element element = _init_element(type, attributes_count, "");
+                    
                 }
             // TODO: add more cases
 
@@ -307,7 +321,6 @@ static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementType type, size
     }
 
     node->parent = parent;
-    node->element = _init_element(type, attributes_count, content);
 
     // initialize children fields (if necessary)
     node->children = NULL;
