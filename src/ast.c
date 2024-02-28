@@ -62,16 +62,12 @@ static void _push_stack(Stack* stack, SyntaxTreeNode* node);
 static SyntaxTreeNode* _pop_stack(Stack* stack);
 
 /* ELEMENT */
-static Element _parse_element(Parser* parser);
-static char* _parse_content(Parser* parser);
-static Element _init_element(ElementType type, size_t attributes_count, char* content);
-static Element _parse_element(Parser* parser);
+static ElementNode* _init_element_node(ElementType type, size_t attributes_count, size_t children_count, SyntaxTreeNode* parent);
 static ElementType get_element_type(char* literal);
 static AttributeType get_attribute_type(char* literal);
-static void _free_element(Element element);
 
 /* NODE */
-static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementType type, size_t attributes_count, char* content);
+static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementNode* element_node);
 static void _push_node(SyntaxTreeNode* parent, SyntaxTreeNode* node);
 
 /* UTIL */
@@ -103,7 +99,7 @@ SyntaxTree parse(char* path) {
     Parser* parser = (Parser*)malloc(sizeof(Parser));
     if (parser == NULL) {
         fprintf(stderr, "could not allocate memory\n");
-        exit (1);
+        exit(1);
     }
 
     parser->tokens = tokens;
@@ -130,10 +126,8 @@ SyntaxTree parse(char* path) {
      */
     
     /* init root node */
-    st.root->parent = NULL;
-    st.root->element = _init_element(UNKNOWN_ELEMENT, 0, NULL);
-    st.root->children = NULL;
-    st.root->children_count = 0;
+    ElementNode* root_element_node = _init_element_node(UNKNOWN_ELEMENT, 0, 0, NULL);
+    st.root = _init_node(NULL, root_element_node);
 
     /* parse */
     /* note: use stack data structure for parsing */
@@ -177,12 +171,6 @@ SyntaxTree parse(char* path) {
                      * push to stack,
                      */
 
-                    Element element = _parse_element(parser);
-                    SyntaxTreeNode* node = _init_node(current_parent, element.type, element.attributes_count, element.content);
-                    _push_node(current_parent, node);
-                    current_parent = node;
-                    _push_stack(&stack, node);
-
                     
                     
                 }
@@ -216,7 +204,7 @@ static void _push_stack(Stack* stack, SyntaxTreeNode* node) {
 
 static SyntaxTreeNode* _pop_stack(Stack* stack) {
     if (stack->top >= 0) {
-        return stack->nodes[stack->top--];
+        return stack->nodes[--stack->top];
     } else {
         fprintf(stderr, "stack underflow\n");
         exit(1);
@@ -225,122 +213,52 @@ static SyntaxTreeNode* _pop_stack(Stack* stack) {
 
 /***************************ELEMENT********************************/
 
-static Element _parse_element(Parser* parser) {
-    ElementType type = get_element_type(parser->token.content);
-    size_t attributes_count = 0;
-    Attribute** attributes = NULL;
-    char* content = NULL;
+/*
+ *
+ * TODO: Parse element function
+ *
+ */
 
-    // Move to the next token
-    _forward(parser);
-
-    // Parse attributes
-    while (parser->position < parser->token_count && parser->token.type != R_ANGLE) {
-        if (parser->token.type == LITERAL) {
-            // assuming tokens of the form "attribute="value""
-            AttributeType attribute_type = get_attribute_type(parser->token.content);
-            _forward(parser);
-            if (parser->position < parser->token_count && parser->token.type == EQUALS) {
-                _forward(parser);
-                if (parser->position < parser->token_count && parser->token.type == D_QUOTE) {
-                    _forward(parser);
-                    if (parser->position < parser->token_count && parser->token.type == LITERAL) {
-                        Attribute* attribute = (Attribute*)malloc(sizeof(Attribute));
-                        if (attribute == NULL) {
-                            fprintf(stderr, "Memory allocation failed for attribute\n");
-                            exit(1);
-                        }
-                        attribute->type = attribute_type;
-                        attribute->content = strdup(parser->token.content); 
-                        if (attribute->content == NULL) {
-                            fprintf(stderr, "Memory allocation failed for attribute content\n");
-                            exit(1);
-                        }
-
-                        attributes_count++;
-                        // reallocate memory for the attributes array
-                        attributes = (Attribute**)realloc(attributes, attributes_count * sizeof(Attribute*));
-                        if (attributes == NULL) {
-                            fprintf(stderr, "Memory allocation failed for attributes array\n");
-                            exit(1);
-                        }
-
-                        attributes[attributes_count - 1] = attribute;
-                    } else {
-                        fprintf(stderr, "expected attribute value after '\"'\n");
-                        exit(1);
-                    }
-                } else {
-                    fprintf(stderr, "expected '\"' after '='\n");
-                    exit(1);
-                }
-            } else {
-                fprintf(stderr, "expected '=' after attribute name\n");
-                exit(1);
-            }
-        }
-
-        // next token
-        _forward(parser);
-    }
-
-    // parse content (if any)
-    if (_peek(parser) != NULL && _peek(parser)->type != F_SLASH) {
-        content = _parse_content(parser);
-    }
-
-    // Check for closing tag
-    if (parser->token.type != R_ANGLE) {
-        fprintf(stderr, "expected '>' to close the opening tag\n");
+static ElementNode* _init_element_node(ElementType type, size_t attributes_count, size_t children_count, SyntaxTreeNode* parent) {
+    // allocate memory for the ElementNode struct
+    ElementNode* element_node = (ElementNode*)malloc(sizeof(ElementNode));
+    if (element_node == NULL) {
+        fprintf(stderr, "could not allocate memory\n");
         exit(1);
     }
 
-    Element element;
-    element.type = type;
-    element.attributes = attributes;
-    element.attributes_count = attributes_count;
-    element.content = content;
-
-    return element;
-}
-
-static char* _parse_content(Parser* parser) {
-    char* content_buffer = NULL;
-    size_t content_length = 0;
-
-    while (parser->position < parser->token_count && parser->token.type != L_ANGLE) {
-        content_buffer = (char*)realloc(content_buffer, (content_length + strlen(parser->token.content) + 1) * sizeof(char));
-        if (content_buffer == NULL) {
-            fprintf(stderr, "Memory allocation failed for content buffer\n");
-            exit(EXIT_FAILURE);
-        }
-        strcat(content_buffer, parser->token.content);
-        content_length += strlen(parser->token.content);
-        _forward(parser);
-    }
-
-    return content_buffer;
-}
-
-static Element _init_element(ElementType type, size_t attributes_count, char* content) {
-    Element element;
-    element.type = type;
-
-    element.attributes = (Attribute**)malloc(attributes_count * sizeof(Attribute*));
-    if (element.attributes == NULL) {
+    // initialize the attributes array
+    element_node->attributes = (Attribute**)malloc(attributes_count * sizeof(Attribute*));
+    if (element_node->attributes == NULL) {
         fprintf(stderr, "could not allocate memory\n");
-        exit(EXIT_FAILURE);
+        exit(1);
+    }
+    // initialize each attribute pointer to NULL
+    for (size_t i = 0; i < attributes_count; ++i) {
+        element_node->attributes[i] = NULL;
     }
 
-    element.attributes_count = attributes_count;
+    element_node->type = type;
+    element_node->attributes_count = attributes_count;
+    
+    // allocate memory for the children array
+    element_node->children = (SyntaxTreeNode**)malloc(children_count * sizeof(SyntaxTreeNode*));
+    if (element_node->children == NULL) {
+        fprintf(stderr, "could not allocate memory\n");
+        exit(1);
+    }
+    // initialize each child pointer to NULL
+    for (size_t i = 0; i < children_count; ++i) {
+        element_node->children[i] = NULL;
+    }
+    element_node->children_count = children_count;
+    element_node->parent = parent;
 
-    // content should be allocated already
-    element.content = content;  
-
-    return element;
+    return element_node;
 }
 
-static ElementType get_element_type(char* literal) {
+static ElementType _get_element_type(char* literal) {
+
     // literal to lowercase
     for (int i = 0; i < strlen(literal); ++i) {
         literal[i] = tolower(literal[i]);
@@ -357,7 +275,7 @@ static ElementType get_element_type(char* literal) {
     return UNKNOWN_ELEMENT;
 }
 
-static AttributeType get_attribute_type(char* literal) {
+static AttributeType _get_attribute_type(char* literal) {
     // literal to lowercase
     for (int i = 0; literal[i]; ++i) {
         literal[i] = tolower(literal[i]);
@@ -374,30 +292,21 @@ static AttributeType get_attribute_type(char* literal) {
     return UNKNOWN_ATTRIBUTE;
 }
 
-static void _free_element(Element element) {
-    if (element.attributes != NULL) {
-        for (size_t i = 0; i < element.attributes_count; ++i) {
-            free(element.attributes[i]->content);
-        }
-        free(element.attributes);
-    }
-
-    free(element.content);
-}
-
 /**********************************NODE*****************************/
-static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementType type, size_t attributes_count, char* content) {
+static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementNode* element_node) {
     SyntaxTreeNode* node = (SyntaxTreeNode*)malloc(sizeof(SyntaxTreeNode));
     if (node == NULL) {
         fprintf(stderr, "could not allocate memory\n");
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     node->parent = parent;
+    node->type = ELEMENT_NODE;  
+    node->data.element = *element_node;  
 
-    // initialize children fields (if necessary)
-    node->children = NULL;
-    node->children_count = 0;
+    // initialize children fields
+    node->data.element.children = NULL;
+    node->data.element.children_count = 0;
 
     return node;
 }
@@ -408,43 +317,54 @@ static void _push_node(SyntaxTreeNode* parent, SyntaxTreeNode* node) {
         return;
     }
 
-    // allocate for childless parents
-    if (parent->children == NULL) {
-        parent->children = (SyntaxTreeNode**)malloc(sizeof(SyntaxTreeNode*));
-        if (parent->children == NULL) {
+    // allocate memory for childless parents or reallocate for new child
+    if (parent->data.element.children == NULL) {
+        parent->data.element.children = (SyntaxTreeNode**)malloc(sizeof(SyntaxTreeNode*));
+        if (parent->data.element.children == NULL) {
             fprintf(stderr, "could not allocate memory\n");
             return;
         }
-        parent->children[0] = node;
-        parent->children_count = 1;
+        parent->data.element.children[0] = node;
+        parent->data.element.children_count = 1;
     } else {
-        // allocate for new child
-        parent->children = (SyntaxTreeNode**)realloc(parent->children, (parent->children_count + 1) * sizeof(SyntaxTreeNode*));
-        if (parent->children == NULL) {
+        parent->data.element.children = (SyntaxTreeNode**)realloc(parent->data.element.children, (parent->data.element.children_count + 1) * sizeof(SyntaxTreeNode*));
+        if (parent->data.element.children == NULL) {
             fprintf(stderr, "could not allocate memory\n");
             return;
         }
-        parent->children[parent->children_count] = node;
-        ++parent->children_count;
+        parent->data.element.children[parent->data.element.children_count] = node;
+        ++parent->data.element.children_count;
     }
 
-    // set parent
+    // Set parent
     node->parent = parent;
 }
 
+/************************CLEANUP*********************/
 
-void free_tree(SyntaxTreeNode* root) {
-    if (root == NULL) {
-        return;
+void free_tree(SyntaxTreeNode* node) {
+    if (node == NULL) {
+        return; 
     }
 
-    for (size_t i = 0; i < root->children_count; ++i) {
-        free_tree(root->children[i]);
+    if (node->type == ELEMENT_NODE) {
+        ElementNode *element = &(node->data.element);
+        for (size_t i = 0; i < element->attributes_count; ++i) {
+            free(element->attributes[i]->content); 
+            free(element->attributes[i]); 
+        }
+        free(element->attributes); 
+
+        // rec
+        for (size_t i = 0; i < element->children_count; ++i) {
+            free_tree(element->children[i]); 
+        }
+        free(element->children); 
+    } else if (node->type == TEXT_NODE) {
+        free(node->data.text.content); 
     }
 
-    _free_element(root->element);
-    free(root->children);
-    free(root);
+    free(node); 
 }
 
 /*************************UTIL**************************/

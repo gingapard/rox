@@ -7,6 +7,7 @@
 #include "utils.h"
 
 typedef struct SyntaxTreeNode SyntaxTreeNode;
+typedef struct ElementNode ElementNode;
 
 typedef enum {
     UNKNOWN_ELEMENT,
@@ -248,18 +249,31 @@ typedef struct {
 	char* content;
 } Attribute;
 
-typedef struct {
-	ElementType type;
-	Attribute** attributes;
-	size_t attributes_count;
-	char* content;
-} Element;
+typedef enum {
+    ELEMENT_NODE,
+    TEXT_NODE,
+} NodeType;
 
-struct SyntaxTreeNode {
-    SyntaxTreeNode* parent;
-    Element element;
+struct ElementNode {
+    ElementType type;
+    Attribute** attributes;
+    size_t attributes_count;
     SyntaxTreeNode** children;
     size_t children_count;
+    SyntaxTreeNode* parent;
+};
+
+typedef struct TextNode {
+    char* content;
+} TextNode;
+
+struct SyntaxTreeNode {
+    NodeType type;
+    union {
+        TextNode text;
+        ElementNode element;
+    } data;
+    SyntaxTreeNode* parent;
 };
 
 typedef struct {
@@ -274,6 +288,6 @@ typedef struct {
 
 
 SyntaxTree parse(char* path);
-void free_tree(SyntaxTreeNode* root);
+void free_tree(SyntaxTreeNode* node);
 
 #endif
