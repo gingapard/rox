@@ -163,19 +163,14 @@ SyntaxTree parse(char* path) {
         switch (parser->token.type) {
             case L_ANGLE:
                 if (_peek(parser)->type == LITERAL) {
-                    /* TODO: check type of element,
-                     * collect element attributes && check type,
-                     * collect element content,
-                     * init node (&& element),
-                     * push node,
-                     * push to stack,
-                     */
-
-                    
-                    
+                    // TODO: parse call parse element function
                 }
-            // TODO: add more cases
 
+                break;
+            case LITERAL: 
+                // TODO:
+                // parse as TextNode and append to current_parent
+                
                 break;
             default:
                 break;
