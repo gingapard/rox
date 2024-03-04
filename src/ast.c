@@ -235,7 +235,7 @@ static ElementNode* _parse_element(Parser* parser) {
     size_t attribute_count = 0;
 
     _move(parser, 2);
-    while (parser->token.type != R_ANGLE && parser->position < parser->token_count) {
+    while (parser->token.type != R_ANGLE && parser->token.type != F_SLASH && parser->position < parser->token_count) {
         Attribute* attribute = capture_attribute(parser);
         if (attributes != NULL) {
             Attribute** tmp = realloc(attributes, (attribute_count + 1) * sizeof(Attribute*));
