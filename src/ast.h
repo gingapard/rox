@@ -240,8 +240,7 @@ typedef struct {
     size_t token_count;
 	uint32_t position;
 	Token token;
-    int in_tag;
-    ElementType tag;
+    SyntaxTreeNode* current_parent;
 } Parser;
 
 typedef struct {
@@ -257,7 +256,7 @@ typedef enum {
 struct ElementNode {
     ElementType type;
     Attribute** attributes;
-    size_t attributes_count;
+    size_t attribute_count;
     SyntaxTreeNode** children;
     size_t children_count;
     SyntaxTreeNode* parent;

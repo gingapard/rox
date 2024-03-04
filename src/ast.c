@@ -62,9 +62,11 @@ static void _push_stack(Stack* stack, SyntaxTreeNode* node);
 static SyntaxTreeNode* _pop_stack(Stack* stack);
 
 /* ELEMENT */
+static ElementNode* _parse_element(Parser* parser);
+static Attribute* capture_attribute(Parser* parser);
 static ElementNode* _init_element_node(ElementType type, size_t attributes_count, size_t children_count, SyntaxTreeNode* parent);
-static ElementType get_element_type(char* literal);
-static AttributeType get_attribute_type(char* literal);
+static ElementType _get_element_type(char* literal);
+static AttributeType _get_attribute_type(char* literal);
 
 /* NODE */
 static SyntaxTreeNode* _init_node(SyntaxTreeNode* parent, ElementNode* element_node);
@@ -72,8 +74,8 @@ static void _push_node(SyntaxTreeNode* parent, SyntaxTreeNode* node);
 
 /* UTIL */
 static void _ignore_comments(Parser* parser);
-static Token* _peek(Parser* parser);
-static void _forward(Parser* parser);
+static Token* _peek(Parser* parser, size_t count);
+static void _move(Parser* parser, int count);
 
 SyntaxTree parse(char* path) {
     SyntaxTree st;
@@ -106,7 +108,6 @@ SyntaxTree parse(char* path) {
     parser->token = parser->tokens[0];
     parser->token_count = token_count;
     parser->position = 0;
-    parser->in_tag = 0;
     
     /* allocate root node */
     st.root = (SyntaxTreeNode*)malloc(sizeof(SyntaxTreeNode));
@@ -152,7 +153,7 @@ SyntaxTree parse(char* path) {
      */
 
     // Stack for parsing tokens
-    SyntaxTreeNode* current_parent = st.root;
+    parser->current_parent  = st.root;
     Stack stack;
     stack.top = -1;
 
@@ -162,8 +163,11 @@ SyntaxTree parse(char* path) {
 
         switch (parser->token.type) {
             case L_ANGLE:
-                if (_peek(parser)->type == LITERAL) {
-                    // TODO: parse call parse element function
+                if (_peek(parser, 1)->type == LITERAL) {
+                    // TODO: call off stack if closing
+                    ElementNode* element_node = _parse_element(parser);
+                    SyntaxTreeNode* new_node = _init_node(parser->current_parent, element_node);
+                    _push_node(parser->current_parent, new_node);
                 }
 
                 break;
@@ -175,9 +179,10 @@ SyntaxTree parse(char* path) {
             default:
                 break;
 
+
         }
         printf("%s\n", parser->token.content);
-        _forward(parser);
+        _move(parser, 1);
     }
       
     free_tokens(parser->tokens, token_count);
@@ -208,11 +213,76 @@ static SyntaxTreeNode* _pop_stack(Stack* stack) {
 
 /***************************ELEMENT********************************/
 
-/*
- *
- * TODO: Parse element function
- *
- */
+static ElementNode* _parse_element(Parser* parser) {
+    ElementNode* element_node = (ElementNode*)malloc(sizeof(ElementNode));
+    if (element_node == NULL) {
+        return NULL;
+    }
+
+    // set type of element
+    element_node->type = _get_element_type(parser->token.content);
+
+    Attribute** attributes;
+    size_t attribute_count = 0;
+
+    _move(parser, 2);
+    while (parser->token.type != R_ANGLE && parser->position < parser->token_count) {
+        Attribute* attribute = capture_attribute(parser);
+        if (attributes != NULL) {
+            Attribute** tmp = realloc(attributes, (attribute_count + 1) * sizeof(Attribute*));
+
+            // if realloc fails
+            if (tmp == NULL) {
+                for (size_t i = 0; i < attribute_count; ++i) {
+                    free(attributes[i]);
+                }
+                free(attributes);
+                return NULL;
+            }
+            attributes = tmp;
+            attributes[++attribute_count] = attribute;
+        }
+         
+        // move to next token
+        _move(parser, 1);
+    }
+        
+
+    // init element node
+    element_node->attributes = attributes;
+    element_node->attribute_count = attribute_count;
+    element_node->children = NULL;
+    element_node->children_count = 0;
+    element_node->parent = parser->current_parent;
+    
+    return element_node;
+}
+
+static Attribute* capture_attribute(Parser* parser) {
+    Attribute* attribute = (Attribute*)malloc(sizeof(Attribute)); 
+    if (attribute == NULL) {
+        return NULL;
+    }
+
+    if (parser->token.type == LITERAL &&
+        _peek(parser, 1)->type == EQUALS &&
+        (_peek(parser, 2)->type == D_QUOTE || _peek(parser, 2)->type == S_QUOTE) &&
+        _peek(parser, 3)->type == LITERAL &&
+        (_peek(parser, 4)->type == D_QUOTE || _peek(parser, 4)->type == S_QUOTE)) {
+
+        // Check type of attribute
+        attribute->type = _get_attribute_type(_peek(parser, 3)->content);
+        attribute->content = _peek(parser, 3)->content;
+
+        // move past attribute
+        _move(parser, 5);
+    } else {
+        free(attribute);
+        attribute = NULL;
+    }
+
+    return attribute;
+}
 
 static ElementNode* _init_element_node(ElementType type, size_t attributes_count, size_t children_count, SyntaxTreeNode* parent) {
     // allocate memory for the ElementNode struct
@@ -234,7 +304,7 @@ static ElementNode* _init_element_node(ElementType type, size_t attributes_count
     }
 
     element_node->type = type;
-    element_node->attributes_count = attributes_count;
+    element_node->attribute_count = attributes_count;
     
     // allocate memory for the children array
     element_node->children = (SyntaxTreeNode**)malloc(children_count * sizeof(SyntaxTreeNode*));
@@ -285,6 +355,10 @@ static AttributeType _get_attribute_type(char* literal) {
     }
 
     return UNKNOWN_ATTRIBUTE;
+}
+
+static uint8_t close_tag(Stack stack) {
+    return 1;
 }
 
 /**********************************NODE*****************************/
@@ -344,7 +418,7 @@ void free_tree(SyntaxTreeNode* node) {
 
     if (node->type == ELEMENT_NODE) {
         ElementNode *element = &(node->data.element);
-        for (size_t i = 0; i < element->attributes_count; ++i) {
+        for (size_t i = 0; i < element->attribute_count; ++i) {
             free(element->attributes[i]->content); 
             free(element->attributes[i]); 
         }
@@ -370,14 +444,14 @@ static void _ignore_comments(Parser* parser) {
         parser->tokens[parser->position + 1].type == BANG) {
         // Skip until the end of the comment
         while (!(parser->token.type == R_ANGLE)) {
-            _forward(parser);
+            _move(parser, 1);
             if (parser->position >= parser->token_count)
                 break;
         }
         if (parser->position >= parser->token_count)
             return;
         // move past the closing '>'
-        _forward(parser);
+        _move(parser, 1);
         return;
     }
 
@@ -389,13 +463,13 @@ static void _ignore_comments(Parser* parser) {
         while (!(parser->token.type == R_ANGLE &&
                  parser->tokens[parser->position - 1].type == SUBTRACT &&
                  parser->tokens[parser->position - 2].type == SUBTRACT)) {
-            _forward(parser);
+            _move(parser, 1);
             if (parser->position >= parser->token_count)
                 break;
         }
         if (parser->position >= parser->token_count)
             break;
-        _forward(parser); // move past the closing -->
+        _move(parser, 1); // move past the closing -->
     }
 
     // ignore JavaScript and CSS multi-line comments = /* */
@@ -404,28 +478,28 @@ static void _ignore_comments(Parser* parser) {
            parser->tokens[parser->position + 1].type == ASTERISK) {
         while (!(parser->token.type == ASTERISK &&
                  parser->tokens[parser->position + 1].type == F_SLASH)) {
-            _forward(parser);
+            _move(parser, 1);
             if (parser->position >= parser->token_count)
                 break;
         }
         if (parser->position >= parser->token_count)
             break;
-        _forward(parser); // move past the closing */
-        _forward(parser);
+        _move(parser, 2); // move past the closing */
     }
 }
 
-static Token* _peek(Parser* parser) {
-    if (parser->position + 1 < parser->token_count) {
-        return &parser->tokens[parser->position + 1];
+static Token* _peek(Parser* parser, size_t count) {
+    if (parser->position + count < parser->token_count) {
+        return &parser->tokens[parser->position + count];
     } else {
         // return NULL if none remaining
         return NULL;
     }
 }
 
-static void _forward(Parser* parser) {
-    if (parser->position < parser->token_count && parser->token.type != EOF_TYPE) {
-        parser->token = parser->tokens[++parser->position];
+static void _move(Parser* parser, int count) {
+    if (parser->position + count < parser->token_count && parser->position + count > 0 && parser->token.type != EOF_TYPE) {
+        parser->position += count;
+        parser->token = parser->tokens[parser->position];
     }
 }
