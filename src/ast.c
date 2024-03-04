@@ -64,6 +64,7 @@ static SyntaxTreeNode* _pop_stack(Stack* stack);
 /* ELEMENT */
 static ElementNode* _parse_element(Parser* parser);
 static Attribute* capture_attribute(Parser* parser);
+static uint8_t is_self_closing(ElementType type);
 static ElementNode* _init_element_node(ElementType type, size_t attributes_count, size_t children_count, SyntaxTreeNode* parent);
 static ElementType _get_element_type(char* literal);
 static AttributeType _get_attribute_type(char* literal);
@@ -168,6 +169,14 @@ SyntaxTree parse(char* path) {
                     ElementNode* element_node = _parse_element(parser);
                     SyntaxTreeNode* new_node = _init_node(parser->current_parent, element_node);
                     _push_node(parser->current_parent, new_node);
+
+                    // push to stack and set as current parent if not self closing element
+                    if (!is_self_closing(new_node->data.element.type)) {
+                        _push_stack(&stack, new_node);
+
+                        // stack.top has to be atleast 0 becuase stack was just pushed to
+                        parser->current_parent = stack.nodes[stack.top];
+                    }
                 }
 
                 break;
@@ -282,6 +291,23 @@ static Attribute* capture_attribute(Parser* parser) {
     }
 
     return attribute;
+}
+
+static uint8_t is_self_closing(ElementType type) {
+
+    // command, keygen (omitted)
+    ElementType self_closing[] =
+    {AREA, BASE, COL, EMBED,
+    HR, IMG, INPUT, LINK, META,
+    PARAM, SOURCE, TRACK, WBR};
+
+    for (size_t i = 0; i < 12; ++i) {
+        if (type == self_closing[i]) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 static ElementNode* _init_element_node(ElementType type, size_t attributes_count, size_t children_count, SyntaxTreeNode* parent) {
