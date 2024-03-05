@@ -14,7 +14,7 @@ void test_get_keyword() {
 
 int main(void) {
 	
-    SyntaxTree st = parse("gnu");
+    SyntaxTree st = parse("testfile");
     free_tree(st.root);
 
 	return 0;

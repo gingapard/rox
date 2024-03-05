@@ -63,8 +63,9 @@ static SyntaxTreeNode* _pop_stack(Stack* stack);
 
 /* ELEMENT */
 static ElementNode* _parse_element(Parser* parser);
-static Attribute* capture_attribute(Parser* parser);
-static uint8_t is_self_closing(ElementType type);
+static Attribute* _capture_attribute(Parser* parser);
+static TextNode _capture_text(Parser* parser);
+static uint8_t _is_self_closing(ElementType type);
 static ElementNode* _init_element_node(ElementType type, size_t attributes_count, size_t children_count, SyntaxTreeNode* parent);
 static ElementType _get_element_type(char* literal);
 static AttributeType _get_attribute_type(char* literal);
@@ -158,7 +159,6 @@ SyntaxTree parse(char* path) {
     Stack stack;
     stack.top = -1;
 
-    // note: remember handle selfclosing tags different
     while (parser->position < parser->token_count && parser->token.type != EOF_TYPE) {
         _ignore_comments(parser);
 
@@ -171,7 +171,7 @@ SyntaxTree parse(char* path) {
                     _push_node(parser->current_parent, new_node);
 
                     // push to stack and set as current parent if not self closing element
-                    if (!is_self_closing(new_node->data.element.type)) {
+                    if (!_is_self_closing(new_node->data.element.type)) {
                         _push_stack(&stack, new_node);
 
                         // stack.top has to be atleast 0 becuase stack was just pushed to
@@ -181,13 +181,10 @@ SyntaxTree parse(char* path) {
 
                 break;
             case LITERAL: 
-                // TODO:
-                // parse as TextNode and append to current_parent
-                
-                break;
+                // call capture text
+                //
             default:
                 break;
-
 
         }
         printf("%s\n", parser->token.content);
@@ -236,7 +233,7 @@ static ElementNode* _parse_element(Parser* parser) {
 
     _move(parser, 2);
     while (parser->token.type != R_ANGLE && parser->token.type != F_SLASH && parser->position < parser->token_count) {
-        Attribute* attribute = capture_attribute(parser);
+        Attribute* attribute = _capture_attribute(parser);
         if (attributes != NULL) {
             Attribute** tmp = realloc(attributes, (attribute_count + 1) * sizeof(Attribute*));
 
@@ -267,7 +264,7 @@ static ElementNode* _parse_element(Parser* parser) {
     return element_node;
 }
 
-static Attribute* capture_attribute(Parser* parser) {
+static Attribute* _capture_attribute(Parser* parser) {
     Attribute* attribute = (Attribute*)malloc(sizeof(Attribute)); 
     if (attribute == NULL) {
         return NULL;
@@ -293,7 +290,37 @@ static Attribute* capture_attribute(Parser* parser) {
     return attribute;
 }
 
-static uint8_t is_self_closing(ElementType type) {
+static TextNode _capture_text(Parser* parser) {
+    TextNode text_node;
+    text_node.content = NULL; 
+
+    size_t size = 0; 
+
+    while (parser->token_count > parser->position) {
+        if (parser->token.type == LITERAL) {
+            size += strlen(parser->token.content) + 1; 
+            char* temp = (char*)realloc(text_node.content, size); 
+            if (temp == NULL) {
+                // on failure
+                free(text_node.content);
+                text_node.content = NULL;
+                return text_node;
+            }
+            text_node.content = temp;
+
+            if (size > strlen(parser->token.content) + 1)
+                strcat(text_node.content, " ");
+            
+            strcat(text_node.content, parser->token.content);
+        }
+
+        _move(parser, 1);
+    }
+
+    return text_node;
+}
+
+static uint8_t _is_self_closing(ElementType type) {
 
     // command, keygen (omitted)
     ElementType self_closing[] =
@@ -301,7 +328,7 @@ static uint8_t is_self_closing(ElementType type) {
     HR, IMG, INPUT, LINK, META,
     PARAM, SOURCE, TRACK, WBR};
 
-    for (size_t i = 0; i < 12; ++i) {
+    for (size_t i = 0; i < sizeof(self_closing) / sizeof(self_closing[0]); ++i) {
         if (type == self_closing[i]) {
             return 1;
         }
@@ -381,10 +408,6 @@ static AttributeType _get_attribute_type(char* literal) {
     }
 
     return UNKNOWN_ATTRIBUTE;
-}
-
-static uint8_t close_tag(Stack stack) {
-    return 1;
 }
 
 /**********************************NODE*****************************/
